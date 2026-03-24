@@ -2,106 +2,82 @@ from entsoe import EntsoePandasClient
 import pandas as pd 
 
 class InputHandler():
-    def __init__(self):
+    def __init__(self, config_dict:dict):
         self.client = EntsoePandasClient(api_key='5535fa5d-0280-43f2-9257-0a9295e5105e')
+        start = pd.Timestamp(f'{config_dict["default_year"]}-01-01', tz="Europe/Brussels")
+        end = pd.Timestamp(f'{config_dict["default_year"] + 1}-01-01', tz="Europe/Brussels")
 
-        start = pd.Timestamp('20220101', tz='Europe/Brussels')
-        end   = pd.Timestamp('20230101', tz='Europe/Brussels')
+        # for default year, get load and cf of main country
+        setattr(self, f'load_{config_dict["country"]}_{config_dict["default_year"]}', self._get_hourly_load(config_dict["country"], start, end))
+        setattr(self, f'cf_{config_dict["country"]}_{config_dict["default_year"]}', self._get_capacity_factors_renewables(config_dict["country"], start, end))
 
-        # Hourly load (demand)
-        self.load_belgium = self._get_hourly_load('BE')
-        self.cf_belgium_2022 = self._get_capacity_factors_renewables('BE')
-        self.cf_belgium_2021 = self._get_capacity_factors_renewables('BE')
+        # for default year, get load and cf of neighbor countries
+        for neighbor in config_dict["neighbor_countries"]:
+            setattr(self, f'load_{neighbor}_{config_dict["default_year"]}', self._get_hourly_load(neighbor, start, end))
+            setattr(self, f'cf_{neighbor}_{config_dict["default_year"]}', self._get_capacity_factors_renewables(neighbor, start, end))
 
-    def _get_hourly_load(self, country:str, start: pd.Timestamp = pd.Timestamp('20220101', tz='Europe/Brussels'), end:pd.Timestamp = pd.Timestamp('20230101', tz='Europe/Brussels')) -> pd.DataFrame: 
+        # for scenario years, get cf of main country
+        if isinstance(config_dict["scenario_years"], list):
+            for scenario_year in config_dict["scenario_years"]:
+                start_scenario = pd.Timestamp(f'{scenario_year}0101', tz="Europe/Brussels")
+                end_scenario = pd.Timestamp(f'{scenario_year+1}0101', tz="Europe/Brussels")
+                setattr(self, f'load_{config_dict["country"]}_{scenario_year}', self._get_hourly_load(config_dict["country"], start_scenario, end_scenario))
+        elif isinstance(config_dict["scenario_years"], int):
+                start_scenario = pd.Timestamp(f'{config_dict["scenario_years"]}0101', tz="Europe/Brussels")
+                end_scenario = pd.Timestamp(f'{config_dict["scenario_years"]+1}0101', tz="Europe/Brussels")
+                setattr(self, f'load_{config_dict["country"]}_{config_dict["scenario_years"]}', self._get_hourly_load(config_dict["country"], start_scenario, end_scenario))
+        
+        self.technology_costs_all = pd.read_csv('technology-data/outputs/costs_2025.csv', index_col=[0, 1])
+        self.technology_costs = {}
+        for technology in config_dict["technologies"]:
+            self.technology_costs[technology] = self._get_technology_costs(technology)
+
+
+    def _get_technology_costs(self, technology: str):
+        return {
+            "inv": self._get_cost(self.technology_costs_all, technology, "investment"),
+            "fom": self._get_cost(self.technology_costs_all, technology, "FOM"),
+            "vom": self._get_cost(self.technology_costs_all, technology, "VOM"),
+        }
+
+    def _get_hourly_load(self, country:str, start: pd.Timestamp, end:pd.Timestamp) -> pd.DataFrame: 
         return self.client.query_load(country, start=start, end=end)
 
 
-    def _get_capacity_factors_renewables(self, country:str, start: pd.Timestamp = pd.Timestamp('20220101', tz='Europe/Brussels'), end:pd.Timestamp = pd.Timestamp('20230101', tz='Europe/Brussels')) -> pd.DataFrame:
-        # Capacity factors one year for solar and wind
+    def _get_capacity_factors_renewables(self, country:str, start: pd.Timestamp, end:pd.Timestamp) -> pd.DataFrame:
         # Actual generation per technology (MW)
         generation = self.client.query_generation(country, start=start, end=end)
 
         # Installed capacity per technology (MW) - returned per month, need to resample
         capacity = self.client.query_installed_generation_capacity(country, start=start, end=end)
 
-        # Solar - Reindex capacity to hourly and forward-fill
-        solar_cap = capacity['Solar'].resample('h').ffill().reindex(generation.index, method='ffill')
-        solar_gen = generation[('Solar', 'Actual Aggregated')]  # MW
-        solar_cf = solar_gen / solar_cap  # dimensionless, 0–1
-
-        # Wind Onshore
-        wind_cap = capacity['Wind Onshore'].resample('h').ffill().reindex(generation.index, method='ffill')
-        wind_gen = generation[('Wind Onshore', 'Actual Aggregated')]
-        wind_cf = wind_gen / wind_cap
-
-        # Wind Offshore
-        wind_off_cap = capacity['Wind Offshore'].resample('h').ffill().reindex(generation.index, method='ffill')
-        wind_off_gen = generation[('Wind Offshore', 'Actual Aggregated')]
-        wind_off_cf = wind_off_gen / wind_off_cap
-
-        # clip to 0,1 and return as a combined dataframe
-        solar_cf    = solar_cf.clip(0, 1)
-        wind_cf     = wind_cf.clip(0, 1)
-        wind_off_cf = wind_off_cf.clip(0, 1)
-
-        df_cf = pd.DataFrame({
-            'solar_cf':         solar_cf,
-            'wind_onshore_cf':  wind_cf,
-            'wind_offshore_cf': wind_off_cf,
+        return pd.DataFrame({
+            'solar_cf':         self._get_cf(country, generation, capacity, 'Solar'),
+            'wind_onshore_cf':  self._get_cf(country, generation, capacity, 'Wind Onshore'),
+            'wind_offshore_cf': self._get_cf(country, generation, capacity, 'Wind Offshore'),
         })
-        return df_cf
+    
+    @staticmethod
+    def _get_cost(df, technology, param):
+        try:
+            return df.loc[(technology, param), "value"]
+        except KeyError:
+            return 0.0
+    
+    @staticmethod
+    def _get_cf(country, generation, capacity, key):
+        try:
+            cap = capacity[key].resample('h').ffill().reindex(generation.index, method='ffill')
+        except KeyError:
+            print(f"Warning: '{key}' not found in CAPACITY for {country}, returning zeros.")
+            return pd.Series(0.0, index=generation.index)
+        
+        try:
+            gen = generation[(key, 'Actual Aggregated')]
+        except KeyError:
+            print(f"Warning: '{key}' not found in GENERATION for {country}, returning zeros.")
+            return pd.Series(0.0, index=generation.index)
 
-
-
-
-
-"""1. Demand / Load Data
-
-Hourly electricity demand for your chosen region (8760 hours/year)
-Sources: ENTSO-E Transparency Platform (entso-e.eu), Open Power System Data (open-power-system-data.org)
-
-2. Renewable Resource Data (per weather year)
-
-Solar irradiance → capacity factors for solar PV (hourly)
-Wind speed → capacity factors for onshore/offshore wind (hourly)
-Sources: renewables.ninja (easiest), ERA5 reanalysis via Copernicus, or the atlite library (used directly with PyPSA)
-For part b) you need multiple weather years (e.g. 2013–2022)
-
-3. Generator Technology Data (costs + parameters)
-For each technology (solar PV, onshore wind, offshore wind, CCGT, nuclear, etc.) you need:
-
-Capital cost (€/kW or €/MW)
-Marginal/variable cost (€/MWh)
-Fixed O&M cost (€/kW/year)
-Lifetime (years, for annualisation)
-Efficiency (for thermal plants)
-CO₂ emissions (tCO₂/MWh_fuel), if you add a carbon price
-Source: PyPSA technology-data repo on GitHub (github.com/PyPSA/technology-data) — this is the standard reference, based on DEA and NREL data
-
-4. Fuel & Carbon Prices
-
-Natural gas, coal, nuclear fuel prices (€/MWh_thermal)
-CO₂ price (€/tCO₂) — e.g. current EU ETS price
-Source: IEA, Eurostat, or just state your assumptions
-
-5. Storage Technology Data (part c)
-
-Battery (Li-ion): capital cost (€/kW power, €/kWh energy), round-trip efficiency, self-discharge
-Pumped hydro: similar parameters
-Hydrogen/electrolysis: if you want long-duration storage
-Source: PyPSA technology-data, NREL ATB
-
-6. Network / Interconnector Data (part d)
-
-Neighbouring countries: at least 3 neighbours + one closed cycle (loop)
-Existing line capacities (MW) between countries
-Source: ENTSO-E Transparency Platform → Cross-border flows / NTC values; also the PyPSA-Eur dataset
-Line parameters: voltage 400 kV, reactance x = 0.1 (given in the problem), line length (km) between nodes
-Bus locations (lat/lon of each country's representative node)
-
-7. Discount Rate
-
-A weighted average cost of capital (WACC), typically 7–8% for Europe
-Used to annualise capital costs: annuity factor = r / (1 - (1+r)^(-lifetime))
-"""
+        cf = (gen / cap).clip(0, 1)
+        cf = cf.where(cap > 0, other=0.0)
+        return cf.fillna(0.0)
