@@ -9,14 +9,13 @@ class NetworkBuilder:
         self.network = pypsa.Network()
 
 
-    def build(self, include_storage = False):
-        years = self.config['years'][0]
+    def build(self, year, include_storage = False):
         countries = self.config['countries']
         voltage_level = self.config['voltage_level']
         self._add_buses(countries, voltage_level)
-        self._add_loads(countries, years)
+        self._add_loads(countries, year)
         self._add_conventional_generators(countries)
-        self._add_volatile_generators(countries, years)
+        self._add_volatile_generators(countries, year)
 
         #if include_storage:
             #self._add_storage(countries)
@@ -36,6 +35,7 @@ class NetworkBuilder:
     def _add_loads(self, countries, years):
         for country in countries:
             demand = self.input_data.load[(country, years)]
+            self.network.set_snapshots(demand.index)
             self.network.add('Load',
                              name=f'load_{country}',
                              bus = f'bus_{country}',
@@ -49,21 +49,21 @@ class NetworkBuilder:
                                  name = f'generator_conv_{tech}', 
                                  bus = f'bus_{country}',
                                  p_nom_extendable = True,
-                                 marginal_cost = self.config['OPEX'][tech],
-                                 capital_cost = self.config['CAPEX'][tech]
+                                 marginal_cost = self.input_data.technology_costs[tech]['vom'],
+                                 capital_cost = self.input_data.technology_costs[tech]['inv']
                                  )
 
     def _add_volatile_generators(self, countries, years):
         for country in countries:
             for tech in self.config['technologies_vol']:
-                cf = self.input_data.cf(country, years)
+                cf = self.input_data.cf[(country, years)]
                 self.network.add('Generator', 
                                 bus = f'bus_{country}',
                                 name = f'generator_vol_{tech}',
                                 p_nom_extendable = True,
-                                p_max_pu = cf,
-                                marginal_cost = self.config['OPEX'][tech],
-                                capital_cost = self.config['CAPEX'][tech]
+                                p_max_pu = cf[tech],
+                                marginal_cost = self.input_data.technology_costs[tech]['vom'],
+                                 capital_cost = self.input_data.technology_costs[tech]['inv']
                                 )
                 
     # def _add_storage(self, countries): #needs some common data for efficiency and standing losses

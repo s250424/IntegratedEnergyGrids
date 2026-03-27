@@ -9,8 +9,7 @@ class Scenario:
         self.results = {}
 
     def run_single_year(self, year):
-        country = self.config['countries'][0]
-        network = self.builder.build(years=year, countries = country)
+        network = self.builder.build(year=year)
         network.optimize()
         self.results[year] = network
         return network

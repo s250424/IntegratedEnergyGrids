@@ -1,4 +1,4 @@
-,solar_cf,wind_onshore_cf,wind_offshore_cf
+,solar-rooftop,onwind,offwind
 2023-01-01 00:00:00+01:00,0.0,0.0,0.0
 2023-01-01 01:00:00+01:00,0.0,0.0,0.0
 2023-01-01 02:00:00+01:00,0.0,0.0,0.0

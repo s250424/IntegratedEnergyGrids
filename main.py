@@ -6,8 +6,8 @@ from src.scenario import Scenario
 CONFIG_A = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
     "years": [2023],   # data in good quality available from ENTSO-E for 2015-2024
-    "technologies_conv": ["CCGT","nuclear"],  # must be the same naming convention as in cost list
-    "technologies_vol": ["solar", "onwind", "offwind"],
+    "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
+    "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
     'voltage_level': [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }
@@ -15,8 +15,8 @@ CONFIG_A = {
 CONFIG_B = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
     "years": [2020, 2021, 2022, 2024], # data in good quality available from ENTSO-E for 2015-2024
-    "technologies_conv": ["CCGT","nuclear"],  # must be the same naming convention as in cost list
-    "technologies_vol": ["solar", "onwind", "offwind"],
+    "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
+    "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
     "voltage_level": [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }
@@ -24,8 +24,8 @@ CONFIG_B = {
 CONFIG_C = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
     "years": [2023], # data in good quality available from ENTSO-E for 2015-2024
-    "technologies_conv": ["CCGT","nuclear"],  # must be the same naming convention as in cost list
-    "technologies_vol": ["solar", "onwind", "offwind"],
+    "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
+    "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
     'voltage_level': [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }
@@ -33,8 +33,8 @@ CONFIG_C = {
 CONFIG_D = {
     "countries": ["BE", "FR", "NL", "DE_LU"],    # must be the same naming convention as used by ENTSO-E
     "years": [2023], # data in good quality available from ENTSO-E for 2015-2024
-    "technologies_conv": ["CCGT","nuclear"],  # must be the same naming convention as in cost list
-    "technologies_vol": ["solar", "onwind", "offwind"],
+    "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
+    "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
     'voltage_level': [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }
