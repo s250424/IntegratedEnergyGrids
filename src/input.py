@@ -34,7 +34,7 @@ class InputHandler():
                 setattr(self, f'load_{config_dict["country"]}_{config_dict["scenario_years"]}', self._get_or_cache_hourly_load(config_dict["country"], config_dict["scenario_years"], start_scenario, end_scenario))
                 setattr(self, f'cf_{config_dict["country"]}_{config_dict["scenario_years"]}', self._get_or_cache_capacity_factors_renewables(config_dict["country"], config_dict["scenario_years"], start_scenario, end_scenario))
 
-        self.technology_costs_all = pd.read_csv('technology-data/outputs/costs_2025.csv', index_col=[0, 1])
+        self.technology_costs_all = pd.read_csv('technology-data/output/costs_2025.csv', index_col=[0, 1])
         self.technology_costs = {}
         for technology in config_dict["technologies"]:
             self.technology_costs[technology] = self._get_technology_costs(technology)
