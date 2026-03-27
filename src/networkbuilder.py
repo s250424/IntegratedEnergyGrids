@@ -1,4 +1,4 @@
-from input import InputHandler
+from src.input import InputHandler
 import pypsa
 
 class NetworkBuilder:
@@ -9,10 +9,11 @@ class NetworkBuilder:
         self.network = pypsa.Network()
 
 
-    def build(self, years, include_storage = False, countries = None):
-        self.countries = countries
-
-        self._add_buses(countries, VOLTAGE_LEVEL)
+    def build(self, include_storage = False):
+        years = self.config['years'][0]
+        countries = self.config['countries']
+        voltage_level = self.config['voltage_level']
+        self._add_buses(countries, voltage_level)
         self._add_loads(countries, years)
         self._add_conventional_generators(countries)
         self._add_volatile_generators(countries, years)
@@ -22,20 +23,21 @@ class NetworkBuilder:
 
         #if len(countries) > 1:
             #self._add_transmission_lines(transmission_lines, REACTANCE)
-
+        
+        return self.network
     
-    def _add_buses(self, countries, VOLTAGE_LEVEL):
+    def _add_buses(self, countries, voltage_level):
         for country in countries:
             self.network.add("Bus", 
-                             f'bus_{country}',
-                             v_nom = VOLTAGE_LEVEL
+                             name=f'bus_{country}',
+                             v_nom = voltage_level
                              )
 
     def _add_loads(self, countries, years):
         for country in countries:
-            demand = self.input_data.get_demand(country, years)
+            demand = self.input_data.load[(country, years)]
             self.network.add('Load',
-                             f'load_{country}',
+                             name=f'load_{country}',
                              bus = f'bus_{country}',
                              p_set = demand['Actual Load']
                              )
@@ -43,7 +45,8 @@ class NetworkBuilder:
     def _add_conventional_generators(self, countries):
         for country in countries:
             for tech in self.config['technologies_conv']:
-                self.network.add('Generator', 
+                self.network.add('Generator',
+                                 name = f'generator_conv_{tech}', 
                                  bus = f'bus_{country}',
                                  p_nom_extendable = True,
                                  marginal_cost = self.config['OPEX'][tech],
@@ -53,9 +56,10 @@ class NetworkBuilder:
     def _add_volatile_generators(self, countries, years):
         for country in countries:
             for tech in self.config['technologies_vol']:
-                cf = self.input_data.get_cf(country, years)
+                cf = self.input_data.cf(country, years)
                 self.network.add('Generator', 
                                 bus = f'bus_{country}',
+                                name = f'generator_vol_{tech}',
                                 p_nom_extendable = True,
                                 p_max_pu = cf,
                                 marginal_cost = self.config['OPEX'][tech],

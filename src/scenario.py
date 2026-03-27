@@ -1,5 +1,5 @@
 from src.input import InputHandler
-from networkbuilder import NetworkBuilder
+from src.networkbuilder import NetworkBuilder
 
 class Scenario:
 
@@ -8,9 +8,9 @@ class Scenario:
         self.builder = NetworkBuilder(config, input_data)
         self.results = {}
 
-    def run_single_year(self):
-        year = self.config['years'][0]
-        network = self.builder.build(years=year)
+    def run_single_year(self, year):
+        country = self.config['countries'][0]
+        network = self.builder.build(years=year, countries = country)
         network.optimize()
         self.results[year] = network
         return network
@@ -18,7 +18,7 @@ class Scenario:
     def run_multiple_years(self):
         years = self.config['years']
         for year in years:
-            self.run_single_year(years=years)
+            self.run_single_year(year=year)
         return self.results
     
     def run_with_storage(self):

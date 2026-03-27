@@ -1,7 +1,7 @@
 import pandas as pd
 
 from src.input import InputHandler
-from scenario import Scenario
+from src.scenario import Scenario
 
 CONFIG_A = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
@@ -23,7 +23,7 @@ CONFIG_B = {
 
 CONFIG_C = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
-    "years": [2020, 2021, 2022, 2024], # data in good quality available from ENTSO-E for 2015-2024
+    "years": [2023], # data in good quality available from ENTSO-E for 2015-2024
     "technologies_conv": ["CCGT","nuclear"],  # must be the same naming convention as in cost list
     "technologies_vol": ["solar", "onwind", "offwind"],
     'voltage_level': [400], # kV, specified by assignment guidelines
@@ -32,7 +32,7 @@ CONFIG_C = {
 
 CONFIG_D = {
     "countries": ["BE", "FR", "NL", "DE_LU"],    # must be the same naming convention as used by ENTSO-E
-    "years": [2020, 2021, 2022, 2024], # data in good quality available from ENTSO-E for 2015-2024
+    "years": [2023], # data in good quality available from ENTSO-E for 2015-2024
     "technologies_conv": ["CCGT","nuclear"],  # must be the same naming convention as in cost list
     "technologies_vol": ["solar", "onwind", "offwind"],
     'voltage_level': [400], # kV, specified by assignment guidelines
@@ -43,7 +43,7 @@ CONFIG_D = {
 ###Task a
 input_data_a = InputHandler(CONFIG_A)
 scenario_a = Scenario(CONFIG_A, input_data_a)
-network_BE = scenario_a.run_single_year()
+network_BE = scenario_a.run_single_year(year=CONFIG_A['years'][0])
 
 ###Task b
 input_data_b = InputHandler(CONFIG_B)
