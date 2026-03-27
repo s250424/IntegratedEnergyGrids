@@ -77,6 +77,15 @@ class NetworkBuilder:
                 marginal_cost = self.get_cost(tech, "VOM")
             except ValueError:
                 marginal_cost = 0.0
+                        # there's an issue with biomass (doesn't have VOM cost in the list) right now is considered 0
+                        # it can be calculated as fuel cost / efficicency, it would be like the following
+                        #except ValueError:
+                        #    if tech == "biomass":
+                        #        fuel = self.get_cost(tech, "fuel")
+                        #        efficiency = self.get_cost(tech, "efficiency")
+                        #        marginal_cost = fuel / efficiency
+                        #    else:
+                        #        marginal_cost = 0.0
 
             self.network.add(
                 "Generator",
