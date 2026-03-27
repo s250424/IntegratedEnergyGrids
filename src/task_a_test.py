@@ -11,14 +11,19 @@ class NetworkBuilder:
         self.weather_year = weather_year
         
         # Define available technologies
-        self.technologies_conv = ['coal', 'nuclear', 'biofuels', 'gas']
+        self.technologies_conv = ['coal', 'nuclear', 'biomass', 'CCGT']
         self.technologies_vol = ['solar', 'wind_onshore', 'wind_offshore']
+
+        # Load technology costs
+        self.costs = pd.read_csv(
+            Path.cwd() / "technology-data" / "output" / "costs_2025.csv"
+        )
 
         # Placeholders for data and network
         self.cf_be = None
         self.be_demand = None
         self.network = None
-    
+
     def load_data(self):
         # Load renewable capacity factors
         self.cf_be = pd.read_csv(
@@ -39,6 +44,24 @@ class NetworkBuilder:
         # Convert to hourly resolution
         self.be_demand = self.be_demand.resample('h').sum()
 
+    def get_cost(self, technology: str, parameter: str) -> float:
+
+        # change names to match cost list
+        if technology == "wind_onshore":
+            technology = "onwind"
+        elif technology == "wind_offshore":
+            technology = "offwind"
+
+        row = self.costs[
+            (self.costs["technology"] == technology) &
+            (self.costs["parameter"] == parameter)
+        ]
+
+        if row.empty:
+            raise ValueError(f"No cost found for technology='{technology}', parameter='{parameter}'")
+
+        return float(row["value"].iloc[0])
+
     def create_network(self):
         """
         Create an empty PyPSA network and define time snapshots.
@@ -49,16 +72,26 @@ class NetworkBuilder:
 
     def add_conventional_generators(self):
         for tech in self.technologies_conv:
+            capital_cost = self.get_cost(tech, "investment")
+            try:
+                marginal_cost = self.get_cost(tech, "VOM")
+            except ValueError:
+                marginal_cost = 0.0
+
             self.network.add(
                 "Generator",
                 tech,
                 bus="bus_BE",
                 p_nom_extendable=True,
-                p_nom_min=0
+                p_nom_min=0,
+                capital_cost=capital_cost,
+                marginal_cost=marginal_cost
             )
     
     def add_renewable_generators(self):
         for tech in self.technologies_vol:
+            capital_cost = self.get_cost(tech, "investment")
+
             self.network.add(
                 "Generator",
                 tech,
@@ -66,7 +99,8 @@ class NetworkBuilder:
                 p_nom_extendable=True,
                 p_nom_min=0,
                 p_max_pu=self.cf_be[f"{tech}_cf"],
-                marginal_cost=0
+                capital_cost=capital_cost,
+                marginal_cost=0.0
             )
     
     def add_load(self):
