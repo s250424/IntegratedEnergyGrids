@@ -3,8 +3,8 @@ import pypsa
 from pathlib import Path
 import pandas as pd
 
-technologies_conv = ['coal', 'nuclear', 'biofuels', 'gas']
-technologies_vol = ['solar', 'wind_onshore', 'wind_offshore']
+technologies_conv = ['coal', 'nuclear', 'biofuels', 'gas'] # conventional energy sources
+technologies_vol = ['solar', 'wind_onshore', 'wind_offshore'] # volatile renewable energy sources
 CF_BE = pd.read_csv(Path.cwd() / 'entsoe_data' / 'capacity_factors_BE_2023.csv', 
                     index_col=0, 
                     parse_dates=True)
