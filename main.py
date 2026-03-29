@@ -62,7 +62,7 @@ network_BE_SA = scenario_b.run_multiple_years()
 input_data_c = InputHandler(CONFIG_C)
 scenario_c = Scenario(CONFIG_C, input_data_c)
 network_BE_storage = scenario_c.run_with_storage()
-visualizer_c = Visualizer(network_BE)
+visualizer_c = Visualizer(network_BE_storage)
 visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"), name="c_dispatch_summer_winter")
 visualizer_c.plot_annual_electricity_mix(name="c_annual_electricity_mix")
 
