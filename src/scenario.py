@@ -21,14 +21,14 @@ class Scenario:
         return self.results
     
     def run_with_storage(self):
-        years = self.config['years']
-        network = self.builder.build(years=years, include_storage=True)
+        year = self.config['years'][0] # assuming we want to run for the first year in the config, can be modified to loop over years if needed
+        network = self.builder.build(year=year, include_storage=True)
         network.optimize()
         return network
     
-    def run_multi_countries(self, countries):
-        years = self.config['years']
-        network = self.builder.build(years=years, countries=countries)
+    def run_multi_countries(self):
+        year = self.config['years'][0] # assuming we want to run for the first year in the config, can be modified to loop over years if needed
+        network = self.builder.build(year=year)
         network.optimize()
         return network
 

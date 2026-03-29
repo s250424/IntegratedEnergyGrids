@@ -7,9 +7,9 @@ class NetworkBuilder:
     def __init__(self, config, input_data):
         self.config = config
         self.input_data = input_data
-        self.network = pypsa.Network()
 
     def build(self, year, include_storage=False):
+        self.network = pypsa.Network()
         countries = self.config["countries"]
         voltage_level = self.config["voltage_level"]
         self._add_buses(countries, voltage_level)
@@ -29,9 +29,9 @@ class NetworkBuilder:
         for country in countries:
             self.network.add("Bus", name=f"bus_{country}", v_nom=voltage_level)
 
-    def _add_loads(self, countries, years):
+    def _add_loads(self, countries, year):
         for country in countries:
-            demand = self.input_data.load[(country, years)]
+            demand = self.input_data.load[(country, year)]
             self.network.set_snapshots(demand.index)
             self.network.add(
                 "Load",
@@ -52,10 +52,10 @@ class NetworkBuilder:
                     capital_cost=self.input_data.technology_costs[tech]["inv"],
                 )
 
-    def _add_volatile_generators(self, countries, years):
+    def _add_volatile_generators(self, countries, year):
         for country in countries:
             for tech in self.config["technologies_vol"]:
-                cf = self.input_data.cf[(country, years)]
+                cf = self.input_data.cf[(country, year)]
                 self.network.add(
                     "Generator",
                     bus=f"bus_{country}",
@@ -66,9 +66,7 @@ class NetworkBuilder:
                     capital_cost=self.input_data.technology_costs[tech]["inv"],
                 )
 
-    def _add_storage(
-        self, countries
-    ):  # needs some common data for efficiency and standing losses
+    def _add_storage(self, countries):  # needs some common data for efficiency and standing losses
         for country in countries:
             for tech in self.config["technologies_storage"]:
                 self.network.add(
@@ -84,10 +82,14 @@ class NetworkBuilder:
                     standing_loss=0,
                 )
 
-    # def _add_transmission_lines(self, transmission_lines, REACTANCE):
-    #     for line in transmission_lines: #should be a dictionary for the lines between countries
-    #         self.network.add('Line',
-    #                     bus0 = ,
-    #                     bus1 = ,
-    #                     r_pu = REACTANCE,
-    #                     )
+    def _add_transmission_lines(self):
+        for line in self.config["transmission_lines"]:
+            self.network.add(
+                "Line",
+                name=line["name"],
+                bus0=f"bus_{line['bus0']}",
+                bus1=f"bus_{line['bus1']}",
+                x=line["x"],
+                s_nom=line["s_nom"],
+                s_nom_extendable=False,
+            )

@@ -61,11 +61,11 @@ network_BE_SA = scenario_b.run_multiple_years()
 ###Task c
 input_data_c = InputHandler(CONFIG_C)
 scenario_c = Scenario(CONFIG_C, input_data_c)
-network_BE_storage = scenario_c.run_with_storage(input_data_c)
+network_BE_storage = scenario_c.run_with_storage()
 
 ###Task d
 input_data_d = InputHandler(CONFIG_D)
 scenario_d = Scenario(CONFIG_D, input_data_d)
-network_BE_connections = scenario_d.run_multi_countries(input_data_d)
+network_BE_connections = scenario_d.run_multi_countries()
 
 print('all network optimizations were successful')
