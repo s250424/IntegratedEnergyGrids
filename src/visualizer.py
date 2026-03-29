@@ -3,12 +3,17 @@ import matplotlib.dates as mdates
 import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
+import pypsa
 
 
 class Visualizer:
-    def __init__(
-        self, dispatch_series_dict: dict[str, pd.Series], capacity_dict: dict[str, list]
-    ):
+    def __init__(self, n: pypsa.Network):
+        dispatch_series_dict = {}
+        capacity_dict = {}
+        print(n.generators.index)
+        for gen in n.generators.index:
+            dispatch_series_dict[gen] = n.generators_t.p[gen]
+            capacity_dict[gen] = n.generators.loc[gen, "p_nom_opt"]
         self.dispatch_series_dict = dispatch_series_dict
         self.capacity_dict = capacity_dict
 
@@ -68,7 +73,7 @@ class Visualizer:
                     linewidth=1.4,
                     alpha=0.9,
                 )
-            axes[idx].set_ylabel("Dispatch (MW)", fontsize=10)
+            axes[idx].set_ylabel("Dispatch (MWh)", fontsize=10)
             axes[idx].set_xlabel("")
             axes[idx].legend(loc="upper right", fontsize=9, framealpha=0.7)
             axes[idx].grid(axis="y", linestyle="--", alpha=0.4)

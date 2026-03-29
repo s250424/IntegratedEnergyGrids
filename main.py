@@ -2,6 +2,7 @@ import pandas as pd
 
 from src.input import InputHandler
 from src.scenario import Scenario
+from src.visualizer import Visualizer
 
 CONFIG_A = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
@@ -44,6 +45,9 @@ CONFIG_D = {
 input_data_a = InputHandler(CONFIG_A)
 scenario_a = Scenario(CONFIG_A, input_data_a)
 network_BE = scenario_a.run_single_year(year=CONFIG_A['years'][0])
+visualizer_a = Visualizer(network_BE)
+visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_a.plot_annual_electricity_mix()
 
 ###Task b
 input_data_b = InputHandler(CONFIG_B)
