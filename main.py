@@ -9,6 +9,7 @@ CONFIG_A = {
     "years": [2023],   # data in good quality available from ENTSO-E for 2015-2024
     "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
     "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
+    "technologies_storage": [],
     'voltage_level': [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }
@@ -18,6 +19,7 @@ CONFIG_B = {
     "years": [2020, 2021, 2022, 2024], # data in good quality available from ENTSO-E for 2015-2024
     "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
     "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
+    "technologies_storage": [],
     "voltage_level": [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }
@@ -27,6 +29,7 @@ CONFIG_C = {
     "years": [2023], # data in good quality available from ENTSO-E for 2015-2024
     "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
     "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
+    "technologies_storage": ["Pumped-Storage-Hydro-bicharger"],
     'voltage_level': [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }
@@ -36,6 +39,7 @@ CONFIG_D = {
     "years": [2023], # data in good quality available from ENTSO-E for 2015-2024
     "technologies_conv": ["CCGT","nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
     "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
+    "technologies_storage": [],
     'voltage_level': [400], # kV, specified by assignment guidelines
     'reactance': [0.1] # specified by assignment guidelines`
 }

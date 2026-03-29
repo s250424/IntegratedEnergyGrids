@@ -23,7 +23,7 @@ class InputHandler():
 
         self.technology_costs_all = pd.read_csv('technology-data/outputs/costs_2025.csv', index_col=[0, 1])
         self.technology_costs = {}
-        all_technologies = self.config["technologies_conv"] + self.config["technologies_vol"]
+        all_technologies = self.config["technologies_conv"] + self.config["technologies_vol"] + self.config["technologies_storage"]
         for tech in all_technologies:
             self.technology_costs[tech] = self._get_technology_costs(tech)
 
@@ -33,6 +33,7 @@ class InputHandler():
             "inv": self._get_cost(self.technology_costs_all, technology, "investment"),
             "fom": self._get_cost(self.technology_costs_all, technology, "FOM"),
             "vom": self._get_cost(self.technology_costs_all, technology, "VOM"),
+            "efficiency": self._get_cost(self.technology_costs_all, technology, "efficiency"),
         }
 
     def _get_load(self, country:str, start: pd.Timestamp, end:pd.Timestamp) -> pd.DataFrame: 
