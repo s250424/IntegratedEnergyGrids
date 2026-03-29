@@ -21,6 +21,7 @@ class Visualizer:
         self,
         start_summer: pd.Timestamp,
         start_winter: pd.Timestamp,
+        name = "dispatch_summer_winter"
     ) -> None:
         """
         Plot dispatch time series for a summer and winter week.
@@ -87,9 +88,9 @@ class Visualizer:
             axes[idx].set_xlim(series.index[0], series.index[-1])
             axes[idx].spines[["top", "right"]].set_visible(False)
 
-        plt.savefig("results/dispatch_summer_winter.png", dpi=150, bbox_inches="tight")
+        plt.savefig(f"results/{name}.png", dpi=150, bbox_inches="tight")
 
-    def plot_annual_electricity_mix(self) -> None:
+    def plot_annual_electricity_mix(self, name="annual_electricity_mix") -> None:
         """
         Plot and save a pie chart of the annual electricity mix.
 
@@ -130,9 +131,9 @@ class Visualizer:
             at.set_fontsize(10)
 
         fig.tight_layout()
-        plt.savefig("results/annual_electricity_mix.png", dpi=150, bbox_inches="tight")
+        plt.savefig(f"results/{name}.png", dpi=150, bbox_inches="tight")
 
-    def plot_sensitivity_capacity_to_weather_years(self) -> None:
+    def plot_sensitivity_capacity_to_weather_years(self, name="sensitivity_capacity_to_weather_years") -> None:
         """
         Plot and save a bar chart of optimal capacity per technology across weather years.
 
@@ -182,7 +183,7 @@ class Visualizer:
         ax.spines[["top", "right"]].set_visible(False)
         fig.tight_layout()
         plt.savefig(
-            "results/sensitivity_capacity_to_weather_years.png",
+            f"results/{name}.png",
             dpi=150,
             bbox_inches="tight",
         )
