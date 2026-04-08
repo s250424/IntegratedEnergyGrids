@@ -29,12 +29,23 @@ class InputHandler():
 
 
     def _get_technology_costs(self, technology: str):
-        return {
-            "inv": self._get_cost(self.technology_costs_all, technology, "investment"),
+        if technology=='Pumped-Storage-Hydro-bicharger':
+            return {
+            "inv": self._get_cost(self.technology_costs_all, technology, "investment")/1000,
             "fom": self._get_cost(self.technology_costs_all, technology, "FOM"),
             "vom": self._get_cost(self.technology_costs_all, technology, "VOM"),
             "efficiency": self._get_cost(self.technology_costs_all, technology, "efficiency"),
+            'lifetime':self._get_cost(self.technology_costs_all, technology, "lifetime")
         }
+        else:
+            return {
+                "inv": self._get_cost(self.technology_costs_all, technology, "investment"), #inputdata i inconsistent in units
+                "fom": self._get_cost(self.technology_costs_all, technology, "FOM"),
+                "vom": self._get_cost(self.technology_costs_all, technology, "VOM"),
+                "efficiency": self._get_cost(self.technology_costs_all, technology, "efficiency"),
+                'lifetime':self._get_cost(self.technology_costs_all, technology, "lifetime")
+            }
+        
 
     def _get_load(self, country:str, start: pd.Timestamp, end:pd.Timestamp) -> pd.DataFrame: 
         return self.client.query_load(country, start=start, end=end)

@@ -49,13 +49,15 @@ class NetworkBuilder:
                     bus=f"bus_{country}",
                     p_nom_extendable=True,
                     marginal_cost=self.input_data.technology_costs[tech]["vom"],
-                    capital_cost=self.input_data.technology_costs[tech]["inv"],
+                    lifetime=self.input_data.technology_costs[tech]['lifetime'],
+                    capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
                 )
 
     def _add_volatile_generators(self, countries, year):
         for country in countries:
             for tech in self.config["technologies_vol"]:
                 cf = self.input_data.cf[(country, year)]
+                cf = cf.reindex(self.network.snapshots)
                 self.network.add(
                     "Generator",
                     bus=f"bus_{country}",
@@ -63,7 +65,7 @@ class NetworkBuilder:
                     p_nom_extendable=True,
                     p_max_pu=cf[tech],
                     marginal_cost=self.input_data.technology_costs[tech]["vom"],
-                    capital_cost=self.input_data.technology_costs[tech]["inv"],
+                    capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
                 )
 
     def _add_storage(self, countries):  # needs some common data for efficiency and standing losses
@@ -74,9 +76,9 @@ class NetworkBuilder:
                     bus=f"bus_{country}",
                     name=f"generator_storage_{tech}",
                     p_nom_extendable=True,
-                    marginal_cost=0,
+                    marginal_cost=0.001,
                     marginal_cost_storage=0,
-                    capital_cost=self.input_data.technology_costs[tech]["inv"],
+                    capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
                     efficiency_store=self.input_data.technology_costs[tech]["efficiency"],
                     efficiency_dispatch=self.input_data.technology_costs[tech]["efficiency"],
                     standing_loss=0,

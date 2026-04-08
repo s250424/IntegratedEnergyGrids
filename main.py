@@ -54,9 +54,9 @@ visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp(
 visualizer_a.plot_annual_electricity_mix()
 
 ###Task b
-input_data_b = InputHandler(CONFIG_B)
-scenario_b = Scenario(CONFIG_B, input_data_b)
-network_BE_SA = scenario_b.run_multiple_years()
+# input_data_b = InputHandler(CONFIG_B)
+# scenario_b = Scenario(CONFIG_B, input_data_b)
+# network_BE_SA = scenario_b.run_multiple_years()
 
 ###Task c
 input_data_c = InputHandler(CONFIG_C)
