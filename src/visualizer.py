@@ -4,10 +4,11 @@ import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 import pypsa
+import os
 
 
 class Visualizer:
-    def __init__(self, n: pypsa.Network):
+    def __init__(self, n: pypsa.Network, scenario_name: str = ""):
         dispatch_series_dict = {}
         capacity_dict = {}
         print(n.generators.index)
@@ -16,6 +17,25 @@ class Visualizer:
             capacity_dict[gen] = n.generators.loc[gen, "p_nom_opt"]
         self.dispatch_series_dict = dispatch_series_dict
         self.capacity_dict = capacity_dict
+        self.scenario_name = scenario_name
+
+    def _make_path(self, default_name: str) -> str:
+        if self.scenario_name:
+            prefix = self.scenario_name + "_"
+        else:
+            prefix = ""
+        os.makedirs("results", exist_ok=True)
+        return f"results/{prefix}{default_name}.png"
+    
+    LABEL_MAP = {
+    "generator_conv_CCGT": "CCGT",
+    "generator_conv_nuclear": "Nuclear",
+    "generator_conv_biomass CHP": "Biomass CHP",
+    "generator_vol_solar-rooftop": "Solar",
+    "generator_vol_onwind": "Onshore Wind",
+    "generator_vol_offwind": "Offshore Wind",
+}
+
 
     def plot_dispatch_time_series(
         self,
@@ -63,24 +83,33 @@ class Visualizer:
             nrows=2, ncols=1, figsize=(14, 7), sharex=False, constrained_layout=True
         )
 
+        # create y_max to scale both y-axis the same
+        y_max = 0
+        for season_dict in [summer_dict, winter_dict]:
+            for series in season_dict.values():
+                y_max = max(y_max, series.max())
+
+        season_labels = ["Summer", "Winter"]
+
         # plot the dispatch series
         for idx, season_dict in enumerate([summer_dict, winter_dict]):
             for (label, series), color in zip(season_dict.items(), colors):
                 axes[idx].plot(
                     series.index,
                     series.values,
-                    label=label,
+                    label=self.LABEL_MAP.get(label, label),
                     color=color,
                     linewidth=1.4,
                     alpha=0.9,
                 )
-            axes[idx].set_ylabel("Dispatch (MWh)", fontsize=10)
+            axes[idx].set_ylabel("Dispatch (MWh)", fontsize=13)  # CHANGED: fontsize 10 -> 13
             axes[idx].set_xlabel("")
-            axes[idx].legend(loc="upper right", fontsize=9, framealpha=0.7)
+            axes[idx].set_title(season_labels[idx], fontsize=13)  # CHANGED: added subplot titles
+            axes[idx].set_ylim(0, y_max * 1.1)                   # CHANGED: added shared y axis limit
+            axes[idx].tick_params(axis="both", labelsize=12)      # CHANGED: added tick label fontsize
             axes[idx].grid(axis="y", linestyle="--", alpha=0.4)
             axes[idx].grid(axis="x", linestyle=":", alpha=0.3)
 
-            # Format x-axis: show day labels
             axes[idx].xaxis.set_major_locator(mdates.DayLocator())
             axes[idx].xaxis.set_major_formatter(mdates.DateFormatter("%a\n%d %b"))
             axes[idx].xaxis.set_minor_locator(mdates.HourLocator(byhour=[6, 12, 18]))
@@ -88,7 +117,15 @@ class Visualizer:
             axes[idx].set_xlim(series.index[0], series.index[-1])
             axes[idx].spines[["top", "right"]].set_visible(False)
 
-        plt.savefig(f"results/{name}.png", dpi=150, bbox_inches="tight")
+            # CHANGED: removed per-subplot legend from here
+
+        # CHANGED: replaced per-subplot legend with single shared figure legend
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc="lower center", ncol=len(handles),
+                fontsize=12, framealpha=0.7, bbox_to_anchor=(0.5, -0.08))
+
+        plt.savefig(self._make_path("dispatch_summer_winter"), dpi=150, bbox_inches="tight")
+        plt.close()
 
     def plot_annual_electricity_mix(self, name="annual_electricity_mix") -> None:
         """

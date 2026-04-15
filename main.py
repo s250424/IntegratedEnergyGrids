@@ -49,7 +49,7 @@ CONFIG_D = {
 input_data_a = InputHandler(CONFIG_A)
 scenario_a = Scenario(CONFIG_A, input_data_a)
 network_BE = scenario_a.run_single_year(year=CONFIG_A['years'][0])
-visualizer_a = Visualizer(network_BE)
+visualizer_a = Visualizer(network_BE, scenario_name = 'a')
 visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
 visualizer_a.plot_annual_electricity_mix()
 
@@ -57,18 +57,25 @@ visualizer_a.plot_annual_electricity_mix()
 # input_data_b = InputHandler(CONFIG_B)
 # scenario_b = Scenario(CONFIG_B, input_data_b)
 # network_BE_SA = scenario_b.run_multiple_years()
+# visualizer_a = Visualizer(network_BE, scenario_name = 'b')
+# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_a.plot_annual_electricity_mix()
 
 ###Task c
 input_data_c = InputHandler(CONFIG_C)
 scenario_c = Scenario(CONFIG_C, input_data_c)
 network_BE_storage = scenario_c.run_with_storage()
-visualizer_c = Visualizer(network_BE_storage)
-visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"), name="c_dispatch_summer_winter")
+visualizer_c = Visualizer(network_BE_storage, scenario_name='c')
+visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
 visualizer_c.plot_annual_electricity_mix(name="c_annual_electricity_mix")
 
+
 ###Task d
-input_data_d = InputHandler(CONFIG_D)
-scenario_d = Scenario(CONFIG_D, input_data_d)
-network_BE_connections = scenario_d.run_multi_countries()
+# input_data_d = InputHandler(CONFIG_D)
+# scenario_d = Scenario(CONFIG_D, input_data_d)
+# network_BE_connections = scenario_d.run_multi_countries()
+# visualizer_a = Visualizer(network_BE, scenario_name = 'd')
+# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_a.plot_annual_electricity_mix()
 
 print('all network optimizations were successful')
