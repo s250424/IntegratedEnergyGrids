@@ -31,6 +31,12 @@ class Scenario:
         network = self.builder.build(year=year)
         network.optimize()
         return network
+    
+    def run_with_global_co2_limit(self):
+        year = self.config['years'][0] # assuming we want to run for the first year in the config, can be modified to loop over years if needed
+        network = self.builder.build(year=year, include_storage=True, include_global_co2_limit=True)
+        network.optimize()
+        return network
 
 
 

@@ -8,7 +8,7 @@ class NetworkBuilder:
         self.config = config
         self.input_data = input_data
 
-    def build(self, year, include_storage=False):
+    def build(self, year, include_storage=False, include_global_co2_limit = False, include_gas_pipeline = False):
         self.network = pypsa.Network()
         countries = self.config["countries"]
         voltage_level = self.config["voltage_level"]
@@ -19,9 +19,11 @@ class NetworkBuilder:
 
         if include_storage:
             self._add_storage(countries)
+        if include_global_co2_limit:
+            self._add_global_co2_limit()
 
         # if len(countries) > 1:
-        # self._add_transmission_lines(transmission_lines, REACTANCE)
+        #     self._add_transmission_lines(transmission_lines, REACTANCE)
 
         return self.network
 
@@ -95,3 +97,11 @@ class NetworkBuilder:
                 s_nom=line["s_nom"],
                 s_nom_extendable=False,
             )
+    
+    def _add_global_co2_limit(self):
+        self.network.add(
+            "GlobalConstraint",
+            "CO2Limit",
+            carrier_attribute="co2_emissions",
+            sense="<=",
+            constant=self.config["CO2_limit"])
