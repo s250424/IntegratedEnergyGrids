@@ -22,8 +22,8 @@ class NetworkBuilder:
         if include_global_co2_limit:
             self._add_global_co2_limit()
 
-        # if len(countries) > 1:
-        #     self._add_transmission_lines(transmission_lines, REACTANCE)
+        if len(countries) > 1 and "transmission_lines" in self.config:
+            self._add_transmission_lines()
 
         return self.network
 
@@ -47,7 +47,7 @@ class NetworkBuilder:
             for tech in self.config["technologies_conv"]:
                 self.network.add(
                     "Generator",
-                    name=f"generator_conv_{tech}",
+                    name=f"generator_conv_{country}_{tech}", # added country as every component in pypsa needs a unique name,
                     bus=f"bus_{country}",
                     p_nom_extendable=True,
                     marginal_cost=self.input_data.technology_costs[tech]["vom"],
@@ -59,11 +59,11 @@ class NetworkBuilder:
         for country in countries:
             for tech in self.config["technologies_vol"]:
                 cf = self.input_data.cf[(country, year)]
-                cf = cf.reindex(self.network.snapshots)
+                cf = cf.reindex(self.network.snapshots).filna(0.0) # fill missing values with 0
                 self.network.add(
                     "Generator",
                     bus=f"bus_{country}",
-                    name=f"generator_vol_{tech}",
+                    name=f"generator_vol_{country}_{tech}", # added country as every component in pypsa needs a unique name,
                     p_nom_extendable=True,
                     p_max_pu=cf[tech],
                     marginal_cost=self.input_data.technology_costs[tech]["vom"],
@@ -76,7 +76,7 @@ class NetworkBuilder:
                 self.network.add(
                     "StorageUnit",
                     bus=f"bus_{country}",
-                    name=f"generator_storage_{tech}",
+                    name=f"generator_storage_{country}_{tech}", # added country as every component in pypsa needs a unique name,
                     p_nom_extendable=True,
                     marginal_cost=0.001,
                     marginal_cost_storage=0,
