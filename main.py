@@ -3,9 +3,8 @@ import copy
 import pandas as pd
 
 from src.input import InputHandler
-from src.scenario import Scenario
+from src.networkbuilder import NetworkBuilder
 from src.visualizer import Visualizer
-
 
 """>>>> SPECIFY CONFIGURATION-DICTIONARIES FOR EACH TASK <<<<"""
 CONFIG_A = {
@@ -35,58 +34,58 @@ CONFIG_D ["transmission_lines"] = [
 ]
 
 CONFIG_F = copy.deepcopy(CONFIG_C)
-CONFIG_F["CO2_limit"] = 20000   # TODO find CO2 emissions / CO2 allowance
+CONFIG_F["global_CO2_limit"] = 20000   # TODO find CO2 emissions / CO2 allowance
 
 CONFIG_G = copy.deepcopy(CONFIG_D)
+# CONFIG_G["CH4_limits"] = False
+
+CONFIG_H = copy.deepcopy(CONFIG_G)
+
+CONFIG_I = copy.deepcopy(CONFIG_H)
+
+CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
 # TASK A
-# input_data_a = InputHandler(CONFIG_A)
-# scenario_a = Scenario(CONFIG_A, input_data_a)
-# network_BE = scenario_a.run_single_year(year=CONFIG_A['years'][0])
-# visualizer_a = Visualizer(network_BE, scenario_name = 'a')
-# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_a.plot_annual_electricity_mix()
+input_data_a = InputHandler(CONFIG_A)
+network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_a.plot_annual_electricity_mix()
 
 # TASK B
-# input_data_b = InputHandler(CONFIG_B)
-# scenario_b = Scenario(CONFIG_B, input_data_b)
-# network_BE_SA = scenario_b.run_multiple_years()
-# visualizer_a = Visualizer(network_BE, scenario_name = 'b')
-# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_a.plot_annual_electricity_mix()
+input_data_b = InputHandler(CONFIG_B)
+networks = []
+for year in CONFIG_B["years"]:
+    network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
+    networks[year] = network_b
 
 # TASK C
-#input_data_c = InputHandler(CONFIG_C)
-#scenario_c = Scenario(CONFIG_C, input_data_c)
-#network_BE_storage = scenario_c.run_with_storage()
-#visualizer_c = Visualizer(network_BE_storage, scenario_name='c')
-#visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-#visualizer_c.plot_annual_electricity_mix(name="c_annual_electricity_mix")
-
+input_data_c = InputHandler(CONFIG_C)
+network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
 
 # TASK D
 input_data_d = InputHandler(CONFIG_D)
-scenario_d = Scenario(CONFIG_D, input_data_d)
-network_BE_connections = scenario_d.run_multi_countries()
-
-    # prints to verify if the network was built correctly
-print(network_BE_connections.buses)
-print(network_BE_connections.lines)
-print(network_BE_connections.generators.index)
-print(network_BE_connections.lines_t.p0.head())
-
-#visualizer_a = Visualizer(network_BE_connections, scenario_name = 'd')
-#visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-#visualizer_a.plot_annual_electricity_mix()
+network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
 
 # TASK F
-#input_data_f = InputHandler(CONFIG_F)
-#scenario_f = Scenario(CONFIG_F, input_data_f) # TODO add 
-#network_BE_CO2limit = scenario_f.run_with_global_co2_limit()
-#visualizer_f = Visualizer(network_BE_CO2limit, scenario_name='e')
-#visualizer_f.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-#visualizer_f.plot_annual_electricity_mix(name="e_annual_electricity_mix")
+input_data_f = InputHandler(CONFIG_F)
+network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
 
+# # TASK G
+# input_data_g = InputHandler(CONFIG_G)
+# network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
+
+# # TASK H
+# input_data_h = InputHandler(CONFIG_H)
+# network_h = NetworkBuilder(CONFIG_H, input_data_h, CONFIG_H["years"][0])
+
+# # TASK i
+# input_data_i = InputHandler(CONFIG_I)
+# network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
+
+# # TASK J
+# input_data_j = InputHandler(CONFIG_J)
+# network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0]))
 
 print('all network optimizations were successful')
