@@ -10,9 +10,8 @@ from src.visualizer import Visualizer
 CONFIG_A = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
     "years": [2023],   # data in good quality available from ENTSO-E for 2015-2024
-    "technologies_conv": ["CCGT", "nuclear", 'biomass CHP'],  # must be the same naming convention as in cost list
-    "technologies_vol": ["solar-rooftop", "onwind", "offwind"],
-    "technologies_storage": [],
+    "technologies_conv": {"BE": ["CCGT", "nuclear", 'biomass CHP']},  # must be the same naming convention as in cost list
+    "technologies_vol": {"BE": ["solar-rooftop", "onwind", "offwind"]},
     'voltage_level': 400, # kV, specified by assignment guidelines
     'reactance': 0.1 # specified by assignment guidelines`
 }
@@ -25,6 +24,13 @@ CONFIG_C["technologies_storage"] = ["Pumped-Storage-Hydro-bicharger"]
 
 CONFIG_D = copy.deepcopy(CONFIG_A)
 CONFIG_D["countries"] = ["BE", "FR", "NL", "DE_LU"]    # must be the same naming convention as used by ENTSO-E
+CONFIG_D["technologies_conv"]["FR"] = ["CCGT", "nuclear", 'biomass CHP']    # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["FR"] = ["solar-rooftop", "onwind", "offwind"] # TODO adjust based on real technology mix
+CONFIG_D["technologies_conv"]["NL"] = ["CCGT", "nuclear", 'biomass CHP']    # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["NL"] = ["solar-rooftop", "onwind", "offwind"] # TODO adjust based on real technology mix
+CONFIG_D["technologies_conv"]["DE_LU"] = ["CCGT", "nuclear", 'biomass CHP'] # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["DE_LU"] = ["solar-rooftop", "onwind", "offwind"]  # TODO adjust based on real technology mix
+
 CONFIG_D ["transmission_lines"] = [
     {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 3500},
     {"name": "BE-NL",    "bus0": "BE",    "bus1": "NL",    "x": 0.1, "s_nom": 3000},
@@ -37,11 +43,13 @@ CONFIG_F = copy.deepcopy(CONFIG_C)
 CONFIG_F["global_CO2_limit"] = 20000   # TODO find CO2 emissions / CO2 allowance
 
 CONFIG_G = copy.deepcopy(CONFIG_D)
-# CONFIG_G["CH4_limits"] = False
+CONFIG_G["CH4_lines"] = {}  # TODO add lines for CH4
 
 CONFIG_H = copy.deepcopy(CONFIG_G)
+CONFIG_H["global_CO2_limit"] = 20000   # TODO find CO2 emissions / CO2 allowance
 
 CONFIG_I = copy.deepcopy(CONFIG_H)
+CONFIG_I["include_heat"] = True
 
 CONFIG_J = copy.deepcopy(CONFIG_I)
 
@@ -55,7 +63,7 @@ visualizer_a.plot_annual_electricity_mix()
 
 # TASK B
 input_data_b = InputHandler(CONFIG_B)
-networks = []
+networks = {}
 for year in CONFIG_B["years"]:
     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
     networks[year] = network_b

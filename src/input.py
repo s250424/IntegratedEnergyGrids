@@ -23,10 +23,13 @@ class InputHandler():
 
         self.technology_costs_all = pd.read_csv('technology-data/outputs/costs_2025.csv', index_col=[0, 1])
         self.technology_costs = {}
+        all_technologies = []
         if self.config.get("technologies_storage"):
-            all_technologies = self.config["technologies_conv"] + self.config["technologies_vol"] + self.config["technologies_storage"]
-        else: 
-            all_technologies = self.config["technologies_conv"] + self.config["technologies_vol"]
+            for country in self.config["countries"]:
+                all_technologies += self.config["technologies_conv"][country] + self.config["technologies_vol"][country] + self.config["technologies_storage"]
+        else:
+            for country in self.config["countries"]:
+                all_technologies += self.config["technologies_conv"][country] + self.config["technologies_vol"][country]
         for tech in all_technologies:
             self.technology_costs[tech] = self._get_technology_costs(tech)
 

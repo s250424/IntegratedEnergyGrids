@@ -19,18 +19,21 @@ class NetworkBuilder:
         self._add_loads(year)
         self._add_conventional_generators()
         self._add_volatile_generators(year)
+        if len(self.config["countries"]) > 1:
+            self._add_transmission_lines()
         if self.config.get("technologies_storage"):
             self._add_storage()
         if self.config.get("global_CO2_limit"):
             self._add_global_co2_limit()
-
-        if len(self.config["countries"]) > 1:
-            self._add_transmission_lines()
         return self.network
 
     def _add_buses(self):
         for country in self.config["countries"]:
-            self.network.add("Bus", name=f"bus_{country}", v_nom=self.config["voltage_level"])
+            self.network.add("Bus", name=f"bus_{country}", v_nom=self.config["voltage_level"], carrier="electricity")
+            if self.config.get("include_heat"):
+                self.network.add("Bus", name=f"bus_{country}_heat", carrier="heat")
+            if self.config.get("CH4_lines"):
+                self.network.add("Bus", name=f"bus_{country}_ch4", carrier="ch4")
 
     def _add_loads(self, year):
         for country in self.config["countries"]:
@@ -42,10 +45,18 @@ class NetworkBuilder:
                 bus=f"bus_{country}",
                 p_set=demand["Actual Load"],
             )
+            if self.config.get("include_heat"):
+                heating_demand = self.input_data.heating_load[(country, year)]  # TODO still needs to be added in InputHandler
+                self.network.add(
+                    "Load",
+                    name=f"load_{country}_heat",
+                    bus=f"bus_{country}_heat",
+                    p_set=heating_demand["Actual Load"],
+                )
 
-    def _add_conventional_generators(self):
+    def _add_conventional_generators(self): # TODO add carrier to conventional generator
         for country in self.config["countries"]:
-            for tech in self.config["technologies_conv"]:
+            for tech in self.config["technologies_conv"][country]:
                 self.network.add(
                     "Generator",
                     name=f"generator_conv_{country}_{tech}", # added country as every component in pypsa needs a unique name,
@@ -58,9 +69,9 @@ class NetworkBuilder:
 
     def _add_volatile_generators(self, year):
         for country in self.config["countries"]:
-            for tech in self.config["technologies_vol"]:
+            for tech in self.config["technologies_vol"][country]:
                 cf = self.input_data.cf[(country, year)]
-                cf = cf.reindex(self.network.snapshots).filna(0.0) # fill missing values with 0
+                cf = cf.reindex(self.network.snapshots).fillna(0.0) # fill missing values with 0
                 self.network.add(
                     "Generator",
                     bus=f"bus_{country}",
@@ -88,17 +99,27 @@ class NetworkBuilder:
                 )
 
     def _add_transmission_lines(self):
-        # for line in self.config["transmission_lines"]:
-        #     self.network.add(
-        #         "Line",
-        #         name=line["name"],
-        #         bus0=f"bus_{line['bus0']}",
-        #         bus1=f"bus_{line['bus1']}",
-        #         x=line["x"],
-        #         s_nom=line["s_nom"],
-        #         s_nom_extendable=False,
-        #     )
-        pass
+        for line in self.config["transmission_lines"]:
+            self.network.add(
+                "Line",
+                name=line["name"],
+                bus0=f"bus_{line['bus0']}",
+                bus1=f"bus_{line['bus1']}",
+                x=line["x"],
+                s_nom=line["s_nom"],
+                s_nom_extendable=False,
+            )
+        if self.config.get("CH4_lines"):
+            for line in self.config["CH4_lines"]:
+                self.network.add(
+                    "Link",
+                    name=line["name"],
+                    bus0=f"bus_{line['bus0']}_ch4",
+                    bus1=f"bus_{line['bus1']}_ch4",
+                    x=line["x"],
+                    s_nom_extendable=True,
+                )
+
     
     def _add_global_co2_limit(self):
         self.network.add(
@@ -106,4 +127,4 @@ class NetworkBuilder:
             "CO2Limit",
             carrier_attribute="co2_emissions",
             sense="<=",
-            constant=self.config["CO2_limit"])
+            constant=self.config["global_CO2_limit"])
