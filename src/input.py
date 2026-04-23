@@ -21,7 +21,7 @@ class InputHandler():
                 self.cf[(country, year)] = self._get_or_cache_capacity_factors_renewables(country, year, start, end)
 
 
-        self.technology_costs_all = pd.read_csv('technology-data/outputs/costs_2025.csv', index_col=[0, 1])
+        self.technology_costs_all = pd.read_csv('technology_costs/costs_2025.csv', index_col=[0, 1])
         self.technology_costs = {}
         all_technologies = []
         if self.config.get("technologies_storage"):

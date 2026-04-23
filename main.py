@@ -61,24 +61,24 @@ visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
 visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
 visualizer_a.plot_annual_electricity_mix()
 
-# TASK B
-input_data_b = InputHandler(CONFIG_B)
-networks = {}
-for year in CONFIG_B["years"]:
-    network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
-    networks[year] = network_b
+# # TASK B
+# input_data_b = InputHandler(CONFIG_B)
+# networks = {}
+# for year in CONFIG_B["years"]:
+#     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
+#     networks[year] = network_b
 
-# TASK C
-input_data_c = InputHandler(CONFIG_C)
-network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
+# # TASK C
+# input_data_c = InputHandler(CONFIG_C)
+# network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
 
-# TASK D
-input_data_d = InputHandler(CONFIG_D)
-network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
+# # TASK D
+# input_data_d = InputHandler(CONFIG_D)
+# network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
 
-# TASK F
-input_data_f = InputHandler(CONFIG_F)
-network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
+# # TASK F
+# input_data_f = InputHandler(CONFIG_F)
+# network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
 
 # # TASK G
 # input_data_g = InputHandler(CONFIG_G)
