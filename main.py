@@ -33,9 +33,9 @@ CONFIG_D["technologies_conv"]["DE_LU"] = ["CCGT", "nuclear", 'biomass CHP'] # TO
 CONFIG_D["technologies_vol"]["DE_LU"] = ["solar-rooftop", "onwind", "offwind"]  # TODO adjust based on real technology mix
 
 CONFIG_D ["transmission_lines"] = [
-    {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 3500},
-    {"name": "BE-NL",    "bus0": "BE",    "bus1": "NL",    "x": 0.1, "s_nom": 3000},
-    {"name": "BE-DE_LU", "bus0": "BE",    "bus1": "DE_LU", "x": 0.1, "s_nom": 2500},
+    {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 1850},
+    {"name": "BE-NL",    "bus0": "BE",    "bus1": "NL",    "x": 0.1, "s_nom": 950},
+    {"name": "BE-DE_LU", "bus0": "BE",    "bus1": "DE_LU", "x": 0.1, "s_nom": 400},
     {"name": "FR-DE_LU", "bus0": "FR",    "bus1": "DE_LU", "x": 0.1, "s_nom": 3000},
     {"name": "NL-DE_LU", "bus0": "NL",    "bus1": "DE_LU", "x": 0.1, "s_nom": 3500},
 ]
