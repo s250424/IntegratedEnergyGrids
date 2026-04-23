@@ -81,6 +81,10 @@ class InputHandler():
             'solar-rooftop':         self._get_cf(country, generation, capacity, 'Solar'),
             'onwind':  self._get_cf(country, generation, capacity, 'Wind Onshore'),
             'offwind': self._get_cf(country, generation, capacity, 'Wind Offshore'),
+            'hydro': (
+                self._get_cf(country, generation, capacity, 'Hydro Water Reservoir') +
+                self._get_cf(country, generation, capacity, 'Hydro Run-of-river and poundage')
+            ).clip(0, 1),
         })
 
     def _get_or_cache_capacity_factors_renewables(self, country:str, year:int, start: pd.Timestamp, end:pd.Timestamp ) -> pd.DataFrame:

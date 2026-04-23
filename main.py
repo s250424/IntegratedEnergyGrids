@@ -25,12 +25,12 @@ CONFIG_C["technologies_storage"] = ["Pumped-Storage-Hydro-bicharger"]
 
 CONFIG_D = copy.deepcopy(CONFIG_A)
 CONFIG_D["countries"] = ["BE", "FR", "NL", "DE_LU"]    # must be the same naming convention as used by ENTSO-E
-CONFIG_D["technologies_conv"]["FR"] = ["CCGT", "nuclear", 'biomass CHP']    # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["FR"] = ["solar-rooftop", "onwind", "offwind"] # TODO adjust based on real technology mix
-CONFIG_D["technologies_conv"]["NL"] = ["CCGT", "nuclear", 'biomass CHP']    # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["NL"] = ["solar-rooftop", "onwind", "offwind"] # TODO adjust based on real technology mix
-CONFIG_D["technologies_conv"]["DE_LU"] = ["CCGT", "nuclear", 'biomass CHP'] # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["DE_LU"] = ["solar-rooftop", "onwind", "offwind"]  # TODO adjust based on real technology mix
+CONFIG_D["technologies_conv"]["FR"] = ["nuclear", "CCGT", "biomass CHP"]    # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["FR"] = ["onwind", "solar-rooftop", "hydro"] # TODO adjust based on real technology mix
+CONFIG_D["technologies_conv"]["NL"] = ["CCGT", "coal", "oil", "biomass CHP"]    # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["NL"] = ["onwind", "offwind", "solar-rooftop"] # TODO adjust based on real technology mix
+CONFIG_D["technologies_conv"]["DE_LU"] = ["CCGT", "coal", "oil", "biomass CHP"] # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["DE_LU"] = ["onwind", "offwind", "solar-rooftop"]  # TODO adjust based on real technology mix
 
 CONFIG_D ["transmission_lines"] = [
     {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 1850},
