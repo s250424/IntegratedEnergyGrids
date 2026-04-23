@@ -1,10 +1,14 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.lines as mlines
+import matplotlib.ticker as mticker
 import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 import pypsa
 import os
+
+from requests import patch
 
 
 class Visualizer:
@@ -27,14 +31,15 @@ class Visualizer:
         os.makedirs("results", exist_ok=True)
         return f"results/{prefix}{default_name}.png"
     
+    # CHANGE: modified the names of each technology as their saved with the country code 
     LABEL_MAP = {
-    "generator_conv_CCGT": "CCGT",
-    "generator_conv_nuclear": "Nuclear",
-    "generator_conv_biomass CHP": "Biomass CHP",
-    "generator_vol_solar-rooftop": "Solar",
-    "generator_vol_onwind": "Onshore Wind",
-    "generator_vol_offwind": "Offshore Wind",
-}
+        "generator_conv_BE_CCGT": "CCGT",
+        "generator_conv_BE_nuclear": "Nuclear",
+        "generator_conv_BE_biomass CHP": "Biomass CHP",
+        "generator_vol_BE_solar-rooftop": "Solar",
+        "generator_vol_BE_onwind": "Onshore Wind",
+        "generator_vol_BE_offwind": "Offshore Wind",
+    }
 
 
     def plot_dispatch_time_series(
@@ -172,55 +177,99 @@ class Visualizer:
 
     def plot_sensitivity_capacity_to_weather_years(self, name="sensitivity_capacity_to_weather_years") -> None:
         """
-        Plot and save a bar chart of optimal capacity per technology across weather years.
+        Plot and save a box plot of optimal capacity per technology across weather years.
 
-        For each technology in `self.capacity_dict`, the bar height represents the
-        mean optimal capacity across weather years, and the error bars extend to the
+        For each technology in `self.capacity_dict`, the boxplot represents the
+        distribution of optimal capacity across weather years, and the error bars extend to the
         min and max values, illustrating the sensitivity to weather year choice.
 
         Saves the figure to 'results/sensitivity_capacity_to_weather_years.png'.
         """
-        colors = [
-            cm.tab10(i / len(self.capacity_dict))
-            for i in range(len(self.capacity_dict))
-        ]  # create colors dynamically
+        labels = [self.LABEL_MAP.get(k, k) for k in self.capacity_dict.keys()]
 
-        # obtain average capacity and variability
-        capacity_dict_statistics = {
-            k: {"mean": np.mean(v), "min": np.min(v), "max": np.max(v)}
-            for k, v in self.capacity_dict.items()
-        }
-
-        # create the plot
-        labels = list(capacity_dict_statistics.keys())
-        means = [capacity_dict_statistics[k]["mean"] for k in labels]
-        lower = [
-            capacity_dict_statistics[k]["mean"] - capacity_dict_statistics[k]["min"]
-            for k in labels
-        ]  # downward
-        upper = [
-            capacity_dict_statistics[k]["max"] - capacity_dict_statistics[k]["mean"]
-            for k in labels
-        ]  # upward
+        data = []
+        for v in self.capacity_dict.values():
+            if all(val == 0 for val in v):
+                data.append([np.nan] * len(v))  # 👈 clave
+            else:
+                data.append(v)
 
         fig, ax = plt.subplots(figsize=(9, 5))
-        ax.bar(labels, means, color=colors, edgecolor="white", linewidth=0.8)
-        ax.errorbar(
-            labels,
-            means,
-            yerr=[lower, upper],
-            fmt="black",
-            color=colors,
-            capsize=6,
-            linewidth=1.5,
+
+        medianprops = dict(color='red', linewidth=1)
+        boxprops = dict(linewidth=1.2, color='black')
+        whiskerprops = dict(linewidth=1, linestyle='--', color='gray')
+        capprops = dict(linewidth=1, color='gray')
+        flierprops = dict(marker='o', markersize=4, alpha=0.5, color='gray')
+
+        bp = ax.boxplot(
+            data,
+            tick_labels=labels,
+            patch_artist=True,
+            medianprops=medianprops,
+            boxprops=boxprops,
+            whiskerprops=whiskerprops,
+            capprops=capprops,
+            flierprops=flierprops
         )
 
-        ax.set_ylabel("Capacity")
+        for patch in bp['boxes']:
+            patch.set_facecolor('#DCE6F1')
+
+        ax.set_ylabel("Capacity (MW)")
+        ax.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda x, p: f"{int(x):,}".replace(",", "."))
+        )
         ax.tick_params(axis="x", rotation=30)
         ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
         fig.tight_layout()
         plt.savefig(
-            f"results/{name}.png",
+            self._make_path(name),
             dpi=150,
             bbox_inches="tight",
         )
+        plt.close()
+    
+    def plot_capacity_factors(self, input_data, country="BE", name="capacity_factors"):
+        """
+        Plot capacity factors for different years for each renewable technology.
+        """
+
+        technologies = ["solar-rooftop", "onwind", "offwind"]
+
+        fig, axes = plt.subplots(len(technologies), 1, figsize=(12, 8), sharex=True)
+
+        for i, tech in enumerate(technologies):
+            for year in input_data.config["years"]:
+                cf = input_data.cf[(country, year)][tech]
+
+                axes[i].plot(
+                cf.index,
+                cf.values,
+                alpha=0.5,
+                linewidth=0.3
+            )
+
+                #  monthly mean to see the seasonal pattern more clearly
+                monthly_mean = cf.resample("M").mean()
+
+                axes[i].plot(
+                    monthly_mean.index,
+                    monthly_mean.values,
+                    linewidth=1.8,
+                    linestyle="-",
+                    label=f"{year} (monthly avg)"
+                )
+            axes[i].xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+            axes[i].xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+            axes[i].set_ylabel(tech)
+            axes[i].set_ylim(0, 1)
+            axes[i].grid(alpha=0.3)
+
+        axes[-1].set_xlabel("Time")
+        axes[0].legend(title="Year")
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
