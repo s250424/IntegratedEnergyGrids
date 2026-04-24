@@ -37,7 +37,7 @@ class Visualizer:
         "generator_conv_BE_CCGT": "BE CCGT",
         "generator_conv_BE_nuclear": "BE Nuclear",
         "generator_conv_BE_biomass CHP": "BE Biomass CHP",
-        "generator_vol_BE_solar-rooftop": "BE Solar",
+        "generator_vol_BE_solar-utility": "BE Solar",
         "generator_vol_BE_onwind": "BE Onshore Wind",
         "generator_vol_BE_offwind": "BE Offshore Wind",
 
@@ -45,7 +45,7 @@ class Visualizer:
         "generator_conv_FR_CCGT": "FR CCGT",
         "generator_conv_FR_nuclear": "FR Nuclear",
         "generator_conv_FR_biomass CHP": "FR Biomass CHP",
-        "generator_vol_FR_solar-rooftop": "FR Solar",
+        "generator_vol_FR_solar-utility": "FR Solar",
         "generator_vol_FR_onwind": "FR Onshore Wind",
         "generator_vol_FR_offwind": "FR Offshore Wind",
         "generator_vol_FR_hydro": "FR Hydro",
@@ -55,7 +55,7 @@ class Visualizer:
         "generator_conv_NL_coal": "NL Coal",
         "generator_conv_NL_oil": "NL Oil",
         "generator_conv_NL_biomass CHP": "NL Biomass CHP",
-        "generator_vol_NL_solar-rooftop": "NL Solar",
+        "generator_vol_NL_solar-utility": "NL Solar",
         "generator_vol_NL_onwind": "NL Onshore Wind",
         "generator_vol_NL_offwind": "NL Offshore Wind",
         "generator_vol_NL_hydro": "NL Hydro",
@@ -65,7 +65,7 @@ class Visualizer:
         "generator_conv_DE_LU_coal": "DE/LU Coal",
         "generator_conv_DE_LU_oil": "DE/LU Oil",
         "generator_conv_DE_LU_biomass CHP": "DE/LU Biomass CHP",
-        "generator_vol_DE_LU_solar-rooftop": "DE/LU Solar",
+        "generator_vol_DE_LU_solar-utility": "DE/LU Solar",
         "generator_vol_DE_LU_onwind": "DE/LU Onshore Wind",
         "generator_vol_DE_LU_offwind": "DE/LU Offshore Wind",
         "generator_vol_DE_LU_hydro": "DE/LU Hydro",
@@ -267,7 +267,7 @@ class Visualizer:
         """
 
         available_techs = input_data.cf[(country, input_data.config["years"][0])].columns
-        technologies = [tech for tech in ["solar-rooftop", "onwind", "offwind", "hydro"] if tech in available_techs]
+        technologies = [tech for tech in ["solar-utility", "onwind", "offwind", "hydro"] if tech in available_techs]
 
         fig, axes = plt.subplots(len(technologies), 1, figsize=(12, 8), sharex=True)
 

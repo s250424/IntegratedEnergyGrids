@@ -11,7 +11,7 @@ CONFIG_A = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
     "years": [2023],   # data in good quality available from ENTSO-E for 2015-2024
     "technologies_conv": {"BE": ["CCGT", "nuclear", 'biomass CHP']},  # must be the same naming convention as in cost list
-    "technologies_vol": {"BE": ["solar-rooftop", "onwind", "offwind"]},
+    "technologies_vol": {"BE": ["solar-utility", "onwind", "offwind"]},
     'voltage_level': 400, # kV, specified by assignment guidelines
     'reactance': 0.1 # specified by assignment guidelines`
 }
@@ -26,11 +26,11 @@ CONFIG_C["technologies_storage"] = ["Pumped-Storage-Hydro-bicharger"]
 CONFIG_D = copy.deepcopy(CONFIG_A)
 CONFIG_D["countries"] = ["BE", "FR", "NL", "DE_LU"]    # must be the same naming convention as used by ENTSO-E
 CONFIG_D["technologies_conv"]["FR"] = ["nuclear", "CCGT", "biomass CHP"]    # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["FR"] = ["onwind", "solar-rooftop", "hydro"] # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["FR"] = ["onwind", "solar-utility", "hydro"] # TODO adjust based on real technology mix
 CONFIG_D["technologies_conv"]["NL"] = ["CCGT", "coal", "oil", "biomass CHP"]    # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["NL"] = ["onwind", "offwind", "solar-rooftop"] # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["NL"] = ["onwind", "offwind", "solar-utility"] # TODO adjust based on real technology mix
 CONFIG_D["technologies_conv"]["DE_LU"] = ["CCGT", "coal", "oil", "biomass CHP"] # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["DE_LU"] = ["onwind", "offwind", "solar-rooftop"]  # TODO adjust based on real technology mix
+CONFIG_D["technologies_vol"]["DE_LU"] = ["onwind", "offwind", "solar-utility"]  # TODO adjust based on real technology mix
 
 CONFIG_D ["transmission_lines"] = [
     {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 1850},
@@ -62,36 +62,36 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 # visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
 # visualizer_a.plot_annual_electricity_mix()
 
-# TASK B
-input_data_b = InputHandler(CONFIG_B)
-networks = {}
-capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
+# # TASK B
+# input_data_b = InputHandler(CONFIG_B)
+# networks = {}
+# capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
 
-for year in CONFIG_B["years"]:
-    network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
-    networks[year] = network_b
-    for gen in network_b.network.generators.index: # CHANGE: loop through generators to get capacity per technology for each year
-        cap = network_b.network.generators.loc[gen, "p_nom_opt"]
-        if gen not in capacity_by_tech:
-            capacity_by_tech[gen] = []
-        capacity_by_tech[gen].append(cap)
+# for year in CONFIG_B["years"]:
+#     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
+#     networks[year] = network_b
+#     for gen in network_b.network.generators.index: # CHANGE: loop through generators to get capacity per technology for each year
+#         cap = network_b.network.generators.loc[gen, "p_nom_opt"]
+#         if gen not in capacity_by_tech:
+#             capacity_by_tech[gen] = []
+#         capacity_by_tech[gen].append(cap)
 
-# Calls to the visualizer b function
-visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_b.capacity_dict = capacity_by_tech
-visualizer_b.plot_sensitivity_capacity_to_weather_years()
+# # Calls to the visualizer b function
+# visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_b.capacity_dict = capacity_by_tech
+# visualizer_b.plot_sensitivity_capacity_to_weather_years()
 
-# Calls to the visualizer b function
-visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_cf.plot_capacity_factors(input_data_b)
+# # Calls to the visualizer b function
+# visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_cf.plot_capacity_factors(input_data_b)
 
 # # TASK C
 # input_data_c = InputHandler(CONFIG_C)
 # network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
 
-# # TASK D
-# input_data_d = InputHandler(CONFIG_D)
-# network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
+# TASK D
+input_data_d = InputHandler(CONFIG_D)
+network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
 
 # # TASK F
 # input_data_f = InputHandler(CONFIG_F)

@@ -70,22 +70,27 @@ class InputHandler():
         df.index = pd.to_datetime(df.index, utc=True).tz_convert(None)
         return df.resample('h').sum()
     
-    def _get_capacity_factors_renewables(self, country:str, start: pd.Timestamp, end:pd.Timestamp) -> pd.DataFrame:
+    def _get_capacity_factors_renewables(self, country: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
         # Actual generation per technology (MW)
         generation = self.client.query_generation(country, start=start, end=end)
 
-        # Installed capacity per technology (MW) - returned per month, need to resample
+        # Installed capacity per technology (MW)
         capacity = self.client.query_installed_generation_capacity(country, start=start, end=end)
 
-        return pd.DataFrame({
-            'solar-rooftop':         self._get_cf(country, generation, capacity, 'Solar'),
-            'onwind':  self._get_cf(country, generation, capacity, 'Wind Onshore'),
+        data = {
+            'solar-utility': self._get_cf(country, generation, capacity, 'Solar'),
+            'onwind': self._get_cf(country, generation, capacity, 'Wind Onshore'),
             'offwind': self._get_cf(country, generation, capacity, 'Wind Offshore'),
-            'hydro': (
+        }
+
+        # Only include hydro for France
+        if country == "FR":
+            data['hydro'] = (
                 self._get_cf(country, generation, capacity, 'Hydro Water Reservoir') +
                 self._get_cf(country, generation, capacity, 'Hydro Run-of-river and poundage')
-            ).clip(0, 1),
-        })
+            ).clip(0, 1)
+
+        return pd.DataFrame(data)
 
     def _get_or_cache_capacity_factors_renewables(self, country:str, year:int, start: pd.Timestamp, end:pd.Timestamp ) -> pd.DataFrame:
         path = self.cache_dir / f"capacity_factors_{country}_{year}.csv"
