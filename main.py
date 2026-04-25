@@ -56,11 +56,11 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
 # TASK A
-# input_data_a = InputHandler(CONFIG_A)
-# etwork_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_a.plot_annual_electricity_mix()
+input_data_a = InputHandler(CONFIG_A)
+network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_a.plot_annual_electricity_mix()
 
 # # TASK B
 # input_data_b = InputHandler(CONFIG_B)
@@ -88,6 +88,18 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 # # TASK C
 # input_data_c = InputHandler(CONFIG_C)
 # network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
+# visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
+# visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_c.plot_dispatch_diff_time_series(
+#     other=visualizer_a,
+#     start_summer=pd.Timestamp("2023-07-01"),
+#     start_winter=pd.Timestamp("2023-12-01"),
+# )
+# visualizer_c.plot_annual_electricity_mix()
+# visualizer_c.plot_storage_behavior(
+#     start_summer=pd.Timestamp("2023-07-01"),
+#     start_winter=pd.Timestamp("2023-12-01"),
+# )
 
 # TASK D
 input_data_d = InputHandler(CONFIG_D)
