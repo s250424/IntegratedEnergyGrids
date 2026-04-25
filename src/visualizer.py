@@ -129,10 +129,12 @@ class Visualizer:
 
     def plot_annual_electricity_mix(self, name="annual_electricity_mix") -> None:
         """
-        Plot and save a pie chart of the annual electricity mix.
+        Plot and save a stacked bar chart of the annual electricity mix.
 
-        Computes each technology's share of total dispatched energy and
-        visualises it as a pie chart saved to 'results/annual_electricity_mix.png'.
+        Computes each technology's total dispatched energy and visualises it
+        as a single stacked horizontal bar saved to 'results/annual_electricity_mix.png'.
+        Segments wide enough show their label inline; narrow segments get an
+        annotated leader line above the bar.
 
         Parameters
         ----------
@@ -140,36 +142,120 @@ class Visualizer:
             Mapping of technology name to its hourly dispatch time series.
             Values should be in consistent energy units (e.g. MWh per hour).
         """
-        colors = [
-            cm.tab10(i / len(self.dispatch_series_dict))
-            for i in range(len(self.dispatch_series_dict))
-        ]  # create colors dynamically
+        # compute per-technology totals and overall total
+        totals_dict = {k: v.sum() for k, v in self.dispatch_series_dict.items()}
+        totals_dict = {k: v for k, v in totals_dict.items() if v > 0}
+        total_dispatch = sum(totals_dict.values())
+    
 
-        # obtain the contribution of each technology to total dispatch
-        total_dispatch = sum(s.sum() for s in self.dispatch_series_dict.values())
-        contribution_dict = {
-            k: v.sum() / total_dispatch for k, v in self.dispatch_series_dict.items()
-        }
-
-        # create pie plot
-        labels = list(contribution_dict.keys())
-        values = np.array(list(contribution_dict.values())) * 100  # → %
-
-        fig, ax = plt.subplots(figsize=(7, 7))
-        wedges, _, autotexts = ax.pie(
-            values,
-            labels=labels,
-            colors=colors,
-            autopct=lambda p: f"{p:.1f}%" if p > 2 else "",
-            startangle=90,
-            wedgeprops=dict(linewidth=1.2, edgecolor="white"),
+        # sort descending so largest segment starts from the left
+        totals_dict = dict(
+            sorted(totals_dict.items(), key=lambda x: x[1], reverse=True)
         )
-        for at in autotexts:
-            at.set_fontsize(10)
+
+        LABEL_MAP = {
+            "generator_conv_BE_CCGT": "CCGT",
+            "generator_conv_BE_nuclear": "Nuclear",
+            "generator_conv_BE_biomass CHP": "Biomass CHP",
+            "generator_vol_BE_solar-rooftop": "Solar",
+            "generator_vol_BE_onwind": "Onshore Wind",
+            "generator_vol_BE_offwind": "Offshore Wind",
+        }
+        
+        labels = [LABEL_MAP.get(k, k) for k in totals_dict.keys()]
+        values = np.array(list(totals_dict.values()))          # raw MWh
+        pct    = values / total_dispatch * 100                 # % for width
+        colors = [cm.tab10(i / len(labels)) for i in range(len(labels))]
+        print("keys in dict:", list(totals_dict.keys()))
+        print("mapped labels:", labels)
+
+
+        fig, ax = plt.subplots(figsize=(12, 3))
+
+        INLINE_THRESHOLD = 8   # % of total bar width — narrower → outside label
+        BAR_Y            = 0
+        BAR_HEIGHT       = 0.5
+        LABEL_Y_ABOVE    = BAR_Y + BAR_HEIGHT / 2 + 0.30   # base y for outside labels
+
+        # stagger every other narrow label a bit higher to reduce overlap
+        stagger_offsets  = [0.0, 0.18]
+
+        left        = 0.0
+        bars        = []
+        outside_ann = []   # collect (mid_x, label_str) for narrow segments
+
+        for i, (label, value, p, color) in enumerate(zip(labels, values, pct, colors)):
+            bar = ax.barh(
+                BAR_Y, p, left=left,
+                height=BAR_HEIGHT,
+                color=color,
+                edgecolor="white",
+                linewidth=1.2,
+            )
+            bars.append(bar)
+
+            mid_x = left + p / 2
+
+            if p >= INLINE_THRESHOLD:
+                # --- inline label ---
+                ax.text(
+                    mid_x, BAR_Y,
+                    f"{label}\n{value/1000000:,.2f} TWh",
+                    va="center", ha="center",
+                    fontsize=8, color="white", fontweight="bold",
+                )
+            else:
+                outside_ann.append((mid_x, label, value))
+
+            left += p
+
+        # --- outside labels with leader lines, staggered to reduce overlap ---
+        for idx, (mid_x, label, value) in enumerate(outside_ann):
+            y_offset  = stagger_offsets[idx % len(stagger_offsets)]
+            label_y   = LABEL_Y_ABOVE + y_offset
+
+            ax.annotate(
+                f"{label}: {value/1000000:,.2f} TWh",
+                xy        =(mid_x, BAR_Y + BAR_HEIGHT / 2),   # tip of arrow → bar edge
+                xytext    =(mid_x, label_y),                   # label position
+                ha        ="center", va="bottom",
+                fontsize  =8,
+                arrowprops=dict(
+                    arrowstyle="-",          # plain line, no arrowhead
+                    color="black",
+                    lw=0.8,
+                ),
+            )
+
+        # total label to the right of the bar
+        ax.text(
+            101, BAR_Y,
+            f"Total: {total_dispatch/1000000:,.2f} TWh",
+            va="center", ha="left",
+            fontsize=9, fontstyle="italic",
+        )
+
+        ax.set_xlim(0, 100)
+        ax.set_ylim(-0.6, 1.2)        # extra headroom for staggered labels
+        ax.set_xlabel("Share of Total Dispatch (%)")
+        ax.set_yticks([])
+        ax.spines[["top", "right", "left"]].set_visible(False)
+
+        # legend below the chart
+        ax.legend(
+            handles=[b[0] for b in bars],
+            labels=labels,
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.35),
+            ncol=min(len(labels), 4),
+            frameon=False,
+            fontsize=9,
+        )
 
         fig.tight_layout()
         plt.savefig(f"results/{name}.png", dpi=150, bbox_inches="tight")
 
+    
     def plot_sensitivity_capacity_to_weather_years(self, name="sensitivity_capacity_to_weather_years") -> None:
         """
         Plot and save a bar chart of optimal capacity per technology across weather years.
