@@ -16,6 +16,7 @@ class NetworkBuilder:
         
         """>>>> ADD COMPONENTS TO PYPSA NETWORK <<<<"""
         self._add_buses()
+        self._add_carrier_init()
         self._add_loads(year)
         self._add_conventional_generators()
         self._add_volatile_generators(year)
@@ -30,10 +31,17 @@ class NetworkBuilder:
     def _add_buses(self):
         for country in self.config["countries"]:
             self.network.add("Bus", name=f"bus_{country}", v_nom=self.config["voltage_level"], carrier="electricity")
-            if self.config.get("include_heat"):
-                self.network.add("Bus", name=f"bus_{country}_heat", carrier="heat")
+            self.network.add("Bus", name=f"bus_{country}_heat", carrier="heat")
+            self.network.add("Bus", name=f"bus_{country}_ch4", carrier="ch4")
+
+    def _add_carrier_init(self):
+        # TODO define carriers and link carrier to CO2 emission
+        for country in self.config["countries"]:
             if self.config.get("CH4_lines"):
-                self.network.add("Bus", name=f"bus_{country}_ch4", carrier="ch4")
+                if country == "NL":
+                    self.network.add("Store", f"gas_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4") 
+            else:
+                self.network.add("Store", f"gas_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4") 
 
     def _add_loads(self, year):
         for country in self.config["countries"]:
@@ -57,15 +65,51 @@ class NetworkBuilder:
     def _add_conventional_generators(self): # TODO add carrier to conventional generator
         for country in self.config["countries"]:
             for tech in self.config["technologies_conv"][country]:
-                self.network.add(
-                    "Generator",
-                    name=f"generator_conv_{country}_{tech}", # added country as every component in pypsa needs a unique name,
-                    bus=f"bus_{country}",
-                    p_nom_extendable=True,
-                    marginal_cost=self.input_data.technology_costs[tech]["vom"],
-                    lifetime=self.input_data.technology_costs[tech]['lifetime'],
-                    capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
-                )
+                if tech == "OCGT":
+                    self.network.add(
+                        "Link", 
+                        "OCGT", 
+                        bus0=f"bus_{country}_ch4", 
+                        bus1=f"bus_{country}",
+                        p_nom_extendable=True, 
+                        marginal_cost=self.input_data.technology_costs[tech]["vom"],
+                        lifetime=self.input_data.technology_costs[tech]['lifetime'],
+                        capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
+                        efficiency=0.35)    # TODO add efficiency from input_data
+                elif tech == "gas_boiler":  # TODO find correct name for gas boiler
+                    self.network.add(
+                        "Link",
+                        name=f"generator_conv_{country}_{tech}",   
+                        bus0=f"bus_{country}_ch4", 
+                        bus1=f"bus_{country}_heat", 
+                        p_nom_extendable=True, 
+                        marginal_cost=self.input_data.technology_costs[tech]["vom"],
+                        lifetime=self.input_data.technology_costs[tech]['lifetime'],
+                        capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
+                        efficiency=0.9)     # TODO add efficiency from input_data
+                elif tech == "CHP":         # TODO find correct name for CHP
+                    self.network.add(
+                        "Link",
+                        name=f"generator_conv_{country}_{tech}",   
+                        bus0=f"bus_{country}_ch4", 
+                        bus1=f"bus_{country}",
+                        bus2=f"bus_{country}_heat",
+                        p_nom_extendable=True, 
+                        marginal_cost=self.input_data.technology_costs[tech]["vom"],
+                        lifetime=self.input_data.technology_costs[tech]['lifetime'],
+                        capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
+                        efficiency=0.3,
+                        efficiency2=0.3)     # TODO add efficiency from input_data
+                else:
+                    self.network.add(
+                        "Generator",
+                        name=f"generator_conv_{country}_{tech}", # added country as every component in pypsa needs a unique name,
+                        bus=f"bus_{country}",
+                        p_nom_extendable=True,
+                        marginal_cost=self.input_data.technology_costs[tech]["vom"],
+                        lifetime=self.input_data.technology_costs[tech]['lifetime'],
+                        capital_cost=self.input_data.technology_costs[tech]["inv"]+self.input_data.technology_costs[tech]["inv"]*(self.input_data.technology_costs[tech]["fom"]/100),
+                    )
 
     def _add_volatile_generators(self, year):
         for country in self.config["countries"]:
@@ -125,6 +169,6 @@ class NetworkBuilder:
         self.network.add(
             "GlobalConstraint",
             "CO2Limit",
-            carrier_attribute="co2_emissions",
+            carrier_attribute="CO2_emissions",
             sense="<=",
             constant=self.config["global_CO2_limit"])

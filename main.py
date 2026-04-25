@@ -1,6 +1,7 @@
 import copy
 
 import pandas as pd
+import numpy as np
 
 from src.input import InputHandler
 from src.networkbuilder import NetworkBuilder
@@ -17,8 +18,7 @@ CONFIG_A = {
 }
 
 CONFIG_B = copy.deepcopy(CONFIG_A)
-# added 2023 for the plots to be complete
-CONFIG_B["years"] = [2020, 2021, 2022, 2023, 2024]  # data in good quality available from ENTSO-E for 2015-2024
+CONFIG_B["years"] = [2020, 2021, 2022, 2023, 2024]
 
 CONFIG_C = copy.deepcopy(CONFIG_A)
 CONFIG_C["technologies_storage"] = ["Pumped-Storage-Hydro-bicharger"]
@@ -41,13 +41,18 @@ CONFIG_D ["transmission_lines"] = [
 ]
 
 CONFIG_F = copy.deepcopy(CONFIG_C)
-CONFIG_F["global_CO2_limit"] = 20000   # TODO find CO2 emissions / CO2 allowance
+CONFIG_F["global_CO2_limit"] = 103911   # Gg CO2-eq, emissions from energy sector 1990 
 
 CONFIG_G = copy.deepcopy(CONFIG_D)
-CONFIG_G["CH4_lines"] = {}  # TODO add lines for CH4
-
+CONFIG_G["CH4_lines"] = [
+    {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR"},
+    {"name": "BE-NL",    "bus0": "BE",    "bus1": "NL"},
+    {"name": "BE-DE_LU", "bus0": "BE",    "bus1": "DE_LU"},
+    {"name": "FR-DE_LU", "bus0": "FR",    "bus1": "DE_LU"},
+    {"name": "NL-DE_LU", "bus0": "NL",    "bus1": "DE_LU"},
+]
 CONFIG_H = copy.deepcopy(CONFIG_G)
-CONFIG_H["global_CO2_limit"] = 20000   # TODO find CO2 emissions / CO2 allowance
+CONFIG_H["global_CO2_limit"] = 623785.5   # Gg CO2-eq, based on emissions from energy sector in 1990 and assuming a 55% reduction in 2025 (the goal for 2030 that is reached sooner for the energy sector) 
 
 CONFIG_I = copy.deepcopy(CONFIG_H)
 CONFIG_I["include_heat"] = True
@@ -105,9 +110,15 @@ visualizer_a.plot_annual_electricity_mix()
 input_data_d = InputHandler(CONFIG_D)
 network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
 
-# # TASK F
+# TASK F
 # input_data_f = InputHandler(CONFIG_F)
-# network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
+# REF_CO2 = CONFIG_F["global_CO2_limit"]
+
+# networks_f = {}
+# for percent in np.arange(1,0, -0.1):
+#     CONFIG_F["global_CO2_limit"] = percent * REF_CO2
+#     network_f = NetworkBuilder(CONFIG_B, input_data_f, CONFIG_B["years"][0])
+#     networks_f[percent] = network_f
 
 # # TASK G
 # input_data_g = InputHandler(CONFIG_G)
