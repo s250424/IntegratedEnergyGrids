@@ -13,6 +13,7 @@ from requests import patch
 
 class Visualizer:
     def __init__(self, n: pypsa.Network, scenario_name: str = ""):
+        self.network = n
         dispatch_series_dict = {}
         capacity_dict = {}
         print(n.generators.index)
@@ -131,16 +132,16 @@ class Visualizer:
             for (label, series), color in zip(season_dict.items(), colors):
                 axes[idx].plot(
                     series.index,
-                    series.values,
+                    series.values / 1000,  # Convert MWh to GWh
                     label=self.LABEL_MAP.get(label, label),
                     color=color,
                     linewidth=1.4,
                     alpha=0.9,
                 )
-            axes[idx].set_ylabel("Dispatch (MWh)", fontsize=13)  # CHANGED: fontsize 10 -> 13
+            axes[idx].set_ylabel("Dispatch (GWh)", fontsize=13)  # CHANGED: MWh -> GWh
             axes[idx].set_xlabel("")
             axes[idx].set_title(season_labels[idx], fontsize=13)  # CHANGED: added subplot titles
-            axes[idx].set_ylim(0, y_max * 1.1)                   # CHANGED: added shared y axis limit
+            axes[idx].set_ylim(0, y_max * 1.1 / 1000)                   # CHANGED: convert to GWh
             axes[idx].tick_params(axis="both", labelsize=12)      # CHANGED: added tick label fontsize
             axes[idx].grid(axis="y", linestyle="--", alpha=0.4)
             axes[idx].grid(axis="x", linestyle=":", alpha=0.3)
@@ -165,130 +166,143 @@ class Visualizer:
     def plot_annual_electricity_mix(self, name="annual_electricity_mix") -> None:
         """
         Plot and save a stacked bar chart of the annual electricity mix.
-
-        Computes each technology's total dispatched energy and visualises it
-        as a single stacked horizontal bar saved to 'results/annual_electricity_mix.png'.
-        Segments wide enough show their label inline; narrow segments get an
-        annotated leader line above the bar.
-
-        Parameters
-        ----------
-        dispatch_series_dict : dict[str, pd.Series]
-            Mapping of technology name to its hourly dispatch time series.
-            Values should be in consistent energy units (e.g. MWh per hour).
+        If multiple countries are present, one horizontal bar per country is drawn
+        vertically, with consistent technology colours and a single shared legend.
         """
-        # compute per-technology totals and overall total
-        totals_dict = {k: v.sum() for k, v in self.dispatch_series_dict.items()}
-        totals_dict = {k: v for k, v in totals_dict.items() if v > 0}
-        total_dispatch = sum(totals_dict.values())
-    
+        # --- gather data per country ---
+        # group dispatch keys by country (key format: generator_xxx_COUNTRY_tech)
+        country_totals = {}  # {country: {key: total_MWh}}
+        for k, v in self.dispatch_series_dict.items():
+            total = v.sum()
+            if total <= 0:
+                continue
+            # extract country from key, e.g. "generator_conv_BE_CCGT" → "BE"
+            parts = k.split("_")
+            # country is the part after "conv" or "vol" or "storage"
+            try:
+                type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+                country = parts[type_idx + 1]
+            except StopIteration:
+                country = "unknown"
 
-        # sort descending so largest segment starts from the left
-        totals_dict = dict(
-            sorted(totals_dict.items(), key=lambda x: x[1], reverse=True)
-        )
+            if country not in country_totals:
+                country_totals[country] = {}
+            country_totals[country][k] = total
 
-        LABEL_MAP = {
-            "generator_conv_BE_CCGT": "CCGT",
-            "generator_conv_BE_nuclear": "Nuclear",
-            "generator_conv_BE_biomass CHP": "Biomass CHP",
-            "generator_vol_BE_solar-rooftop": "Solar",
-            "generator_vol_BE_onwind": "Onshore Wind",
-            "generator_vol_BE_offwind": "Offshore Wind",
+        countries = list(country_totals.keys())
+
+        # --- build a global colour map keyed by technology label ---
+        # collect all unique labels across all countries
+        all_keys = sorted({k for c in country_totals.values() for k in c.keys()})
+        all_labels = [self.LABEL_MAP.get(k, k) for k in all_keys]
+        label_to_color = {
+            label: cm.tab10(i / len(all_labels))
+            for i, label in enumerate(all_labels)
         }
-        
-        labels = [LABEL_MAP.get(k, k) for k in totals_dict.keys()]
-        values = np.array(list(totals_dict.values()))          # raw MWh
-        pct    = values / total_dispatch * 100                 # % for width
-        colors = [cm.tab10(i / len(labels)) for i in range(len(labels))]
-        print("keys in dict:", list(totals_dict.keys()))
-        print("mapped labels:", labels)
 
-
-        fig, ax = plt.subplots(figsize=(12, 3))
-
-        INLINE_THRESHOLD = 8   # % of total bar width — narrower → outside label
-        BAR_Y            = 0
-        BAR_HEIGHT       = 0.5
-        LABEL_Y_ABOVE    = BAR_Y + BAR_HEIGHT / 2 + 0.30   # base y for outside labels
-
-        # stagger every other narrow label a bit higher to reduce overlap
+        # --- layout ---
+        n_countries   = len(countries)
+        BAR_HEIGHT    = 0.5
+        BAR_SPACING   = 1.0          # vertical distance between bar centres
+        INLINE_THRESHOLD = 8         # % width below which label goes outside
         stagger_offsets  = [0.0, 0.18]
 
-        left        = 0.0
-        bars        = []
-        outside_ann = []   # collect (mid_x, label_str) for narrow segments
+        fig_height = max(3, n_countries * 1.8 + 1.5)
+        fig, ax = plt.subplots(figsize=(12, fig_height))
 
-        for i, (label, value, p, color) in enumerate(zip(labels, values, pct, colors)):
-            bar = ax.barh(
-                BAR_Y, p, left=left,
-                height=BAR_HEIGHT,
-                color=color,
-                edgecolor="white",
-                linewidth=1.2,
-            )
-            bars.append(bar)
+        legend_handles = {}          # label → patch, for the shared legend
+        all_outside    = []          # (mid_x, label, value, bar_y) across all bars
 
-            mid_x = left + p / 2
+        for c_idx, country in enumerate(countries):
+            bar_y      = c_idx * BAR_SPACING
+            totals     = country_totals[country]
+            total_disp = sum(totals.values())
 
-            if p >= INLINE_THRESHOLD:
-                # --- inline label ---
-                ax.text(
-                    mid_x, BAR_Y,
-                    f"{label}\n{value/1000000:,.2f} TWh",
-                    va="center", ha="center",
-                    fontsize=8, color="white", fontweight="bold",
+            # sort descending
+            totals = dict(sorted(totals.items(), key=lambda x: x[1], reverse=True))
+
+            left = 0.0
+            for key, value in totals.items():
+                label = self.LABEL_MAP.get(key, key)
+                color = label_to_color[label]
+                pct   = value / total_disp * 100
+
+                bar = ax.barh(
+                    bar_y, pct, left=left,
+                    height=BAR_HEIGHT,
+                    color=color,
+                    edgecolor="white",
+                    linewidth=1.2,
                 )
-            else:
-                outside_ann.append((mid_x, label, value))
 
-            left += p
+                # collect for legend (only need one patch per label)
+                if label not in legend_handles:
+                    legend_handles[label] = bar[0]
 
-        # --- outside labels with leader lines, staggered to reduce overlap ---
-        for idx, (mid_x, label, value) in enumerate(outside_ann):
-            y_offset  = stagger_offsets[idx % len(stagger_offsets)]
-            label_y   = LABEL_Y_ABOVE + y_offset
+                mid_x = left + pct / 2
 
-            ax.annotate(
-                f"{label}: {value/1000000:,.2f} TWh",
-                xy        =(mid_x, BAR_Y + BAR_HEIGHT / 2),   # tip of arrow → bar edge
-                xytext    =(mid_x, label_y),                   # label position
-                ha        ="center", va="bottom",
-                fontsize  =8,
-                arrowprops=dict(
-                    arrowstyle="-",          # plain line, no arrowhead
-                    color="black",
-                    lw=0.8,
-                ),
+                if pct >= INLINE_THRESHOLD:
+                    ax.text(
+                        mid_x, bar_y,
+                        f"{label}\n{value/1e6:,.2f} TWh",
+                        va="center", ha="center",
+                        fontsize=7.5, color="white", fontweight="bold",
+                    )
+                else:
+                    all_outside.append((mid_x, label, value, bar_y))
+
+                left += pct
+
+            # total label to the right of each bar
+            ax.text(
+                101, bar_y,
+                f"Total: {total_disp/1e6:,.2f} TWh",
+                va="center", ha="left",
+                fontsize=8.5, fontstyle="italic",
             )
 
-        # total label to the right of the bar
-        ax.text(
-            101, BAR_Y,
-            f"Total: {total_dispatch/1000000:,.2f} TWh",
-            va="center", ha="left",
-            fontsize=9, fontstyle="italic",
-        )
+        # --- outside labels with leader lines ---
+        # group by bar_y so stagger offsets reset per country
+        from itertools import groupby
+        all_outside_sorted = sorted(all_outside, key=lambda x: x[3])
+        for bar_y, group in groupby(all_outside_sorted, key=lambda x: x[3]):
+            for idx, (mid_x, label, value, _) in enumerate(group):
+                y_offset = stagger_offsets[idx % len(stagger_offsets)]
+                label_y  = bar_y + BAR_HEIGHT / 2 + 0.18 + y_offset
+                ax.annotate(
+                    f"{label}: {value/1e6:,.2f} TWh",
+                    xy        =(mid_x, bar_y + BAR_HEIGHT / 2),
+                    xytext    =(mid_x, label_y),
+                    ha        ="center", va="bottom",
+                    fontsize  =7.5,
+                    arrowprops=dict(arrowstyle="-", color="black", lw=0.8),
+                )
 
+        # --- axes formatting ---
         ax.set_xlim(0, 100)
-        ax.set_ylim(-0.6, 1.2)        # extra headroom for staggered labels
+        ax.set_ylim(
+            -BAR_HEIGHT,
+            (n_countries - 1) * BAR_SPACING + BAR_HEIGHT + 0.8,  # headroom for labels
+        )
+        ax.set_yticks([c * BAR_SPACING for c in range(n_countries)])
+        ax.set_yticklabels(countries, fontsize=11)
         ax.set_xlabel("Share of Total Dispatch (%)")
-        ax.set_yticks([])
         ax.spines[["top", "right", "left"]].set_visible(False)
 
-        # legend below the chart
+        # --- single shared legend ---
         ax.legend(
-            handles=[b[0] for b in bars],
-            labels=labels,
+            handles=list(legend_handles.values()),
+            labels=list(legend_handles.keys()),
             loc="upper center",
-            bbox_to_anchor=(0.5, -0.35),
-            ncol=min(len(labels), 4),
+            bbox_to_anchor=(0.5, -0.15),
+            ncol=min(len(legend_handles), 4),
             frameon=False,
             fontsize=9,
         )
 
         fig.tight_layout()
-        plt.savefig(f"results/{name}.png", dpi=150, bbox_inches="tight")
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
 
     
     def plot_sensitivity_capacity_to_weather_years(self, name="sensitivity_capacity_to_weather_years") -> None:
@@ -354,6 +368,12 @@ class Visualizer:
 
         available_techs = input_data.cf[(country, input_data.config["years"][0])].columns
         technologies = [tech for tech in ["solar-utility", "onwind", "offwind", "hydro"] if tech in available_techs]
+        label_tech_map = {
+            "solar-utility": "Solar",  
+            "onwind": "Onshore Wind",
+            "offwind": "Offshore Wind",
+            "hydro": "Hydro",
+        }
 
         fig, axes = plt.subplots(len(technologies), 1, figsize=(12, 8), sharex=True)
 
@@ -380,7 +400,7 @@ class Visualizer:
                 )
             axes[i].xaxis.set_major_locator(mdates.MonthLocator(interval=3))
             axes[i].xaxis.set_major_formatter(mdates.DateFormatter('%b'))
-            axes[i].set_ylabel(tech)
+            axes[i].set_ylabel(label_tech_map.get(tech, tech))
             axes[i].set_ylim(0, 1)
             axes[i].grid(alpha=0.3)
 
@@ -388,5 +408,214 @@ class Visualizer:
         axes[0].legend(title="Year")
 
         fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_dispatch_diff_time_series(
+        self,
+        other: "Visualizer",
+        start_summer: pd.Timestamp,
+        start_winter: pd.Timestamp,
+        name: str = "dispatch_diff_c_minus_a",
+        ) -> None:
+        """
+        Plot the difference in dispatch time series (self - other) for a summer
+        and winter week. Intended to compare scenario C (self) against scenario A
+        (other). Positive values mean more dispatch in self, negative means less.
+
+        Parameters
+        ----------
+        other : Visualizer
+            The baseline visualizer (scenario A) to subtract from.
+        start_summer : pd.Timestamp
+            Start of the summer week (inclusive).
+        start_winter : pd.Timestamp
+            Start of the winter week (inclusive).
+        """
+        end_summer = start_summer + pd.Timedelta(days=7)
+        end_winter = start_winter + pd.Timedelta(days=7)
+
+        # union of all technology keys across both scenarios
+        all_keys = sorted(
+            set(self.dispatch_series_dict.keys()) | set(other.dispatch_series_dict.keys())
+        )
+        colors = [cm.tab10(i / len(all_keys)) for i in range(len(all_keys))]
+
+        def compute_diff(key, start, end):
+            """Return (C_series - A_series) for a given key and time window."""
+            s_self  = self.dispatch_series_dict.get(key)
+            s_other = other.dispatch_series_dict.get(key)
+
+            if s_self is not None:
+                s_self  = s_self.loc[start:end]
+            if s_other is not None:
+                s_other = s_other.loc[start:end]
+
+            if s_self is None:
+                return -s_other                        # only in A → fully negative
+            if s_other is None:
+                return s_self                          # only in C → fully positive
+            return s_self - s_other                    # both exist → difference
+
+        fig, axes = plt.subplots(
+            nrows=2, ncols=1, figsize=(14, 7), sharex=False, constrained_layout=True
+        )
+
+        season_params = [
+            ("Summer", start_summer, end_summer),
+            ("Winter", start_winter, end_winter),
+        ]
+
+        # compute y_max across both seasons for consistent scaling
+        y_abs_max = 0
+        for _, start, end in season_params:
+            for key in all_keys:
+                diff = compute_diff(key, start, end)
+                y_abs_max = max(y_abs_max, diff.abs().max())
+
+        for idx, (season_label, start, end) in enumerate(season_params):
+            ax = axes[idx]
+
+            for key, color in zip(all_keys, colors):
+                diff = compute_diff(key, start, end)
+                ax.plot(
+                    diff.index,
+                    diff.values / 1000,          # MWh → GWh
+                    label=self.LABEL_MAP.get(key, key),
+                    color=color,
+                    linewidth=1.4,
+                    alpha=0.9,
+                )
+
+            # zero reference line
+            ax.axhline(0, color="black", linewidth=0.8, linestyle="--", alpha=0.5)
+
+            ax.set_title(season_label, fontsize=13)
+            ax.set_ylabel("Dispatch difference (GWh)\nC − A", fontsize=12)
+            ax.set_ylim(-y_abs_max * 1.1 / 1000, y_abs_max * 1.1 / 1000)
+            ax.tick_params(axis="both", labelsize=12)
+            ax.grid(axis="y", linestyle="--", alpha=0.4)
+            ax.grid(axis="x", linestyle=":", alpha=0.3)
+
+            ax.xaxis.set_major_locator(mdates.DayLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%a\n%d %b"))
+            ax.xaxis.set_minor_locator(mdates.HourLocator(byhour=[6, 12, 18]))
+            ax.set_xlim(diff.index[0], diff.index[-1])
+            ax.spines[["top", "right"]].set_visible(False)
+
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(
+            handles, labels,
+            loc="lower center", ncol=len(handles),
+            fontsize=12, framealpha=0.7, bbox_to_anchor=(0.5, -0.08),
+        )
+
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+    
+    def plot_storage_behavior(
+        self,
+        start_summer: pd.Timestamp,
+        start_winter: pd.Timestamp,
+        name: str = "storage_behavior",
+    ) -> None:
+        """
+        Plot storage power (charge/discharge) and state of charge for a summer
+        and winter week.
+
+        Each season gets two stacked subpanels:
+        - Top: power in GW (positive = discharging, negative = charging)
+        - Bottom: state of charge in GWh
+
+        Parameters
+        ----------
+        start_summer : pd.Timestamp
+            Start of the summer week (inclusive).
+        start_winter : pd.Timestamp
+            Start of the winter week (inclusive).
+        """
+        storage_units = self.network.storage_units.index.tolist()
+
+        if not storage_units:
+            print("No storage units found in network — skipping plot.")
+            return
+
+        colors = [cm.tab10(i / len(storage_units)) for i in range(len(storage_units))]
+
+        end_summer = start_summer + pd.Timedelta(days=7)
+        end_winter = start_winter + pd.Timedelta(days=7)
+
+        season_params = [
+            ("Summer", start_summer, end_summer),
+            ("Winter", start_winter, end_winter),
+        ]
+
+        # 2 seasons × 2 subpanels (power + soc) = 4 rows
+        fig, axes = plt.subplots(
+            nrows=4, ncols=1, figsize=(14, 12), constrained_layout=True
+        )
+
+        # row index mapping: season 0 → rows 0,1 / season 1 → rows 2,3
+        for s_idx, (season_label, start, end) in enumerate(season_params):
+            ax_power = axes[s_idx * 2]
+            ax_soc   = axes[s_idx * 2 + 1]
+
+            for unit, color in zip(storage_units, colors):
+                label = self.LABEL_MAP.get(unit, unit)
+
+                # --- power ---
+                power = self.network.storage_units_t.p[unit].loc[start:end]
+                ax_power.plot(
+                    power.index,
+                    power.values / 1000,        # MW → GW
+                    label=label,
+                    color=color,
+                    linewidth=1.4,
+                    alpha=0.9,
+                )
+
+                # --- state of charge ---
+                soc = self.network.storage_units_t.state_of_charge[unit].loc[start:end]
+                ax_soc.plot(
+                    soc.index,
+                    soc.values / 1000,          # MWh → GWh
+                    label=label,
+                    color=color,
+                    linewidth=1.4,
+                    alpha=0.9,
+                )
+
+            # --- power panel formatting ---
+            ax_power.axhline(0, color="black", linewidth=0.8, linestyle="--", alpha=0.5)
+            ax_power.set_title(season_label, fontsize=13)
+            ax_power.set_ylabel("Power (GW)\n+ discharge / − charge", fontsize=11)
+            ax_power.grid(axis="y", linestyle="--", alpha=0.4)
+            ax_power.grid(axis="x", linestyle=":", alpha=0.3)
+            ax_power.spines[["top", "right"]].set_visible(False)
+            ax_power.tick_params(axis="both", labelsize=11)
+
+            # --- soc panel formatting ---
+            ax_soc.set_ylabel("State of Charge (GWh)", fontsize=11)
+            ax_soc.set_ylim(bottom=0)
+            ax_soc.grid(axis="y", linestyle="--", alpha=0.4)
+            ax_soc.grid(axis="x", linestyle=":", alpha=0.3)
+            ax_soc.spines[["top", "right"]].set_visible(False)
+            ax_soc.tick_params(axis="both", labelsize=11)
+
+            # shared x-axis formatting for both panels in this season
+            for ax in [ax_power, ax_soc]:
+                ax.xaxis.set_major_locator(mdates.DayLocator())
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%a\n%d %b"))
+                ax.xaxis.set_minor_locator(mdates.HourLocator(byhour=[6, 12, 18]))
+                ax.set_xlim(start, end)
+
+        # single shared legend at the bottom
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(
+            handles, labels,
+            loc="lower center", ncol=len(handles),
+            fontsize=12, framealpha=0.7, bbox_to_anchor=(0.5, -0.04),
+        )
+
         plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
         plt.close()
