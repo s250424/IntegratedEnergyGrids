@@ -20,36 +20,25 @@ class InputHandler():
                 self.load[(country, year)] = self._get_or_cache_load(country, year, start, end)
                 self.cf[(country, year)] = self._get_or_cache_capacity_factors_renewables(country, year, start, end)
 
+        self.tech_data = pd.read_csv('technology_costs/costs_2025.csv', index_col=[0, 1])
+        self.load_heat = 0  # TODO add heating load
 
-        self.technology_costs_all = pd.read_csv('technology_costs/costs_2025.csv', index_col=[0, 1])
-        self.technology_costs = {}
-        all_technologies = []
-        if self.config.get("technologies_storage"):
-            for country in self.config["countries"]:
-                all_technologies += self.config["technologies_conv"][country] + self.config["technologies_vol"][country] + self.config["technologies_storage"]
-        else:
-            for country in self.config["countries"]:
-                all_technologies += self.config["technologies_conv"][country] + self.config["technologies_vol"][country]
-        for tech in all_technologies:
-            self.technology_costs[tech] = self._get_technology_costs(tech)
-
-
-    def _get_technology_costs(self, technology: str):
-        if technology=='Pumped-Storage-Hydro-bicharger':
+    def _get_tech_costs(self, tech: str):
+        if tech in (self.config.get("technologies_storage") or []):
             return {
-            "inv": self._get_cost(self.technology_costs_all, technology, "investment")/1000,
-            "fom": self._get_cost(self.technology_costs_all, technology, "FOM"),
-            "vom": self._get_cost(self.technology_costs_all, technology, "VOM"),
-            "efficiency": self._get_cost(self.technology_costs_all, technology, "efficiency"),
-            'lifetime':self._get_cost(self.technology_costs_all, technology, "lifetime")
+            "inv": self._get_cost(self.tech_costs_all, tech, "investment")/1000,
+            "fom": self._get_cost(self.tech_costs_all, tech, "FOM"),
+            "vom": self._get_cost(self.tech_costs_all, tech, "VOM"),
+            "efficiency": self._get_cost(self.tech_costs_all, tech, "efficiency"),
+            'lifetime':self._get_cost(self.tech_costs_all, tech, "lifetime")
         }
         else:
             return {
-                "inv": self._get_cost(self.technology_costs_all, technology, "investment"), #inputdata i inconsistent in units
-                "fom": self._get_cost(self.technology_costs_all, technology, "FOM"),
-                "vom": self._get_cost(self.technology_costs_all, technology, "VOM"),
-                "efficiency": self._get_cost(self.technology_costs_all, technology, "efficiency"),
-                'lifetime':self._get_cost(self.technology_costs_all, technology, "lifetime")
+                "inv": self._get_cost(self.tech_costs_all, tech, "investment"), #inputdata i inconsistent in units
+                "fom": self._get_cost(self.tech_costs_all, tech, "FOM"),
+                "vom": self._get_cost(self.tech_costs_all, tech, "VOM"),
+                "efficiency": self._get_cost(self.tech_costs_all, tech, "efficiency"),
+                'lifetime':self._get_cost(self.tech_costs_all, tech, "lifetime")
             }
         
 
@@ -71,25 +60,18 @@ class InputHandler():
         return df.resample('h').sum()
     
     def _get_capacity_factors_renewables(self, country: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-        # Actual generation per technology (MW)
+        # Actual generation per tech (MW)
         generation = self.client.query_generation(country, start=start, end=end)
 
-        # Installed capacity per technology (MW)
+        # Installed capacity per tech (MW)
         capacity = self.client.query_installed_generation_capacity(country, start=start, end=end)
 
         data = {
+            'solar-rooftop': self._get_cf(country, generation, capacity, 'Solar'),
             'solar-utility': self._get_cf(country, generation, capacity, 'Solar'),
             'onwind': self._get_cf(country, generation, capacity, 'Wind Onshore'),
             'offwind': self._get_cf(country, generation, capacity, 'Wind Offshore'),
         }
-
-        # Only include hydro for France
-        if country == "FR":
-            data['hydro'] = (
-                self._get_cf(country, generation, capacity, 'Hydro Water Reservoir') +
-                self._get_cf(country, generation, capacity, 'Hydro Run-of-river and poundage')
-            ).clip(0, 1)
-
         return pd.DataFrame(data)
 
     def _get_or_cache_capacity_factors_renewables(self, country:str, year:int, start: pd.Timestamp, end:pd.Timestamp ) -> pd.DataFrame:
@@ -107,9 +89,9 @@ class InputHandler():
         return df
     
     @staticmethod
-    def _get_cost(df, technology, param):
+    def _get_cost(df, tech, param):
         try:
-            return df.loc[(technology, param), "value"]
+            return df.loc[(tech, param), "value"]
         except KeyError:
             return 0.0
     

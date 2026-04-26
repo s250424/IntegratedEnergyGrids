@@ -13,8 +13,8 @@ from src.visualizer import Visualizer
 CONFIG_A = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
     "years": [2023],   # data in good quality available from ENTSO-E for 2015-2024
-    "technologies_conv": {"BE": ["CCGT", "nuclear", 'biomass CHP']},  # must be the same naming convention as in cost list
-    "technologies_vol": {"BE": ["solar-utility", "onwind", "offwind"]},
+    "technologies_disp": ["biomass CHP", "CCGT", "coal", "gas boiler steam", "industrial heat pump high temperature", "nuclear", "OCGT"],  # must be the same naming convention as in cost list
+    "technologies_vol": ["offwind", "onwind", "solar-utility"],   # must be the same naming convention as in cost list
     'voltage_level': 400, # kV, specified by assignment guidelines
     'reactance': 0.1 # specified by assignment guidelines`
 }
@@ -23,16 +23,10 @@ CONFIG_B = copy.deepcopy(CONFIG_A)
 CONFIG_B["years"] = [2020, 2021, 2022, 2023, 2024]
 
 CONFIG_C = copy.deepcopy(CONFIG_A)
-CONFIG_C["technologies_storage"] = ["Pumped-Storage-Hydro-bicharger"]
+CONFIG_C["technologies_storage"] = ["Pumped-Storage-Hydro-bicharger", "Lithium-Ion-LFP-bicharger"]
 
 CONFIG_D = copy.deepcopy(CONFIG_A)
 CONFIG_D["countries"] = ["BE", "FR", "NL", "DE_LU"]    # must be the same naming convention as used by ENTSO-E
-CONFIG_D["technologies_conv"]["FR"] = ["nuclear", "CCGT", "biomass CHP"]    # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["FR"] = ["onwind", "solar-utility", "hydro"] # TODO adjust based on real technology mix
-CONFIG_D["technologies_conv"]["NL"] = ["CCGT", "coal", "oil", "biomass CHP"]    # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["NL"] = ["onwind", "offwind", "solar-utility"] # TODO adjust based on real technology mix
-CONFIG_D["technologies_conv"]["DE_LU"] = ["CCGT", "coal", "oil", "biomass CHP"] # TODO adjust based on real technology mix
-CONFIG_D["technologies_vol"]["DE_LU"] = ["onwind", "offwind", "solar-utility"]  # TODO adjust based on real technology mix
 
 CONFIG_D ["transmission_lines"] = [
     {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 1850},
@@ -43,7 +37,7 @@ CONFIG_D ["transmission_lines"] = [
 ]
 
 CONFIG_F = copy.deepcopy(CONFIG_C)
-CONFIG_F["global_CO2_limit"] = 103911   # Gg CO2-eq, emissions from energy sector 1990 
+CONFIG_F["global_CO2_limit"] = 103911000   # t CO2-eq, emissions from energy sector 1990
 
 CONFIG_G = copy.deepcopy(CONFIG_D)
 CONFIG_G["CH4_lines"] = [
@@ -54,7 +48,7 @@ CONFIG_G["CH4_lines"] = [
     {"name": "NL-DE_LU", "bus0": "NL",    "bus1": "DE_LU"},
 ]
 CONFIG_H = copy.deepcopy(CONFIG_G)
-CONFIG_H["global_CO2_limit"] = 623785.5   # Gg CO2-eq, based on emissions from energy sector in 1990 and assuming a 55% reduction in 2025 (the goal for 2030 that is reached sooner for the energy sector) 
+CONFIG_H["global_CO2_limit"] = 623785500   # t CO2-eq, based on emissions from energy sector in 1990 and assuming a 55% reduction in 2025 (the goal for 2030 that is reached sooner for the energy sector) 
 
 CONFIG_I = copy.deepcopy(CONFIG_H)
 CONFIG_I["include_heat"] = True
@@ -126,12 +120,8 @@ visualizer_cf.plot_capacity_factors(input_data_b)
 # for percent in np.arange(1.0, -0.1, -0.1):
 #     co2_limit = percent * REF_CO2
 #     CONFIG_F["global_CO2_limit"] = co2_limit
-#     try:
-#         network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
-#         networks_f[round(percent, 1)] = network_f
-#         print(f"CO2 {percent*100:.0f}% — solved OK")
-#     except Exception as e:
-#         print(f"CO2 {percent*100:.0f}% — infeasible or error: {e}")
+#     network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
+#     networks_f[round(percent, 1)] = network_f
 
 # grouped bar chart: C vs F at 100%
 # visualizer_c = Visualizer(network_c.network, scenario_name="c")
