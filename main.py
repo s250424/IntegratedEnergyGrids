@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend, no Qt needed
 import copy
 
 import pandas as pd
@@ -61,11 +63,11 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
 # TASK A
-input_data_a = InputHandler(CONFIG_A)
-network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-visualizer_a.plot_annual_electricity_mix()
+# input_data_a = InputHandler(CONFIG_A)
+# network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_a.plot_annual_electricity_mix()
 
 # # TASK B
 # input_data_b = InputHandler(CONFIG_B)
@@ -90,9 +92,9 @@ visualizer_a.plot_annual_electricity_mix()
 # visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
 # visualizer_cf.plot_capacity_factors(input_data_b)
 
-# # TASK C
-# input_data_c = InputHandler(CONFIG_C)
-# network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
+# TASK C
+input_data_c = InputHandler(CONFIG_C)
+network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
 # visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
 # visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
 # visualizer_c.plot_dispatch_diff_time_series(
@@ -107,18 +109,41 @@ visualizer_a.plot_annual_electricity_mix()
 # )
 
 # TASK D
-input_data_d = InputHandler(CONFIG_D)
-network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
+# input_data_d = InputHandler(CONFIG_D)
+# network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
+# visualizer_d = Visualizer(network_d.network, scenario_name = 'd')
+# visualizer_d.plot_annual_electricity_mix()
 
 # TASK F
-# input_data_f = InputHandler(CONFIG_F)
-# REF_CO2 = CONFIG_F["global_CO2_limit"]
+input_data_f = InputHandler(CONFIG_F)
+REF_CO2 = CONFIG_F["global_CO2_limit"]
 
-# networks_f = {}
-# for percent in np.arange(1,0, -0.1):
-#     CONFIG_F["global_CO2_limit"] = percent * REF_CO2
-#     network_f = NetworkBuilder(CONFIG_B, input_data_f, CONFIG_B["years"][0])
-#     networks_f[percent] = network_f
+networks_f = {}
+for percent in np.arange(1.0, -0.1, -0.1):
+    co2_limit = percent * REF_CO2
+    CONFIG_F["global_CO2_limit"] = co2_limit
+    try:
+        network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
+        networks_f[round(percent, 1)] = network_f
+        print(f"CO2 {percent*100:.0f}% — solved OK")
+    except Exception as e:
+        print(f"CO2 {percent*100:.0f}% — infeasible or error: {e}")
+
+# grouped bar chart: C vs F at 100%
+# visualizer_c = Visualizer(network_c.network, scenario_name="c")
+# visualizer_f_full = Visualizer(networks_f[max(networks_f.keys())].network, scenario_name="f")
+# visualizer_c.plot_scenario_comparison(
+#     other=visualizer_f_full,
+#     self_label="C (no CO₂ limit)",
+#     other_label="F (1990 CO₂ limit)",
+#     name="comparison_c_vs_f",
+# )
+# sensitivity plot
+# visualizer_c.plot_co2_sensitivity(
+#     networks_f=networks_f,
+#     ref_co2=REF_CO2,
+#     name="co2_sensitivity",
+# )
 
 # # TASK G
 # input_data_g = InputHandler(CONFIG_G)

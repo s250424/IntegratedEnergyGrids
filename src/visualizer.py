@@ -24,6 +24,20 @@ class Visualizer:
         self.capacity_dict = capacity_dict
         self.scenario_name = scenario_name
 
+        self.TECH_COLORS = {
+            "CCGT":           "#e07b3b",
+            "Nuclear":        "#9467bd",
+            "Biomass CHP":    "#2ca02c",
+            "Solar Rooftop":  "#f7c948",
+            "Solar Utility":  "#f4e04d",
+            "Onshore Wind":   "#74c0e0",
+            "Offshore Wind":  "#1f77b4",
+            "Pumped Storage": "#8c564b",
+            "hydro":          "#17becf",
+            "Oil":            "#d62728",
+            "Coal":           "#8c564b",
+        }
+
     def _make_path(self, default_name: str) -> str:
         if self.scenario_name:
             prefix = self.scenario_name + "_"
@@ -31,9 +45,45 @@ class Visualizer:
             prefix = ""
         os.makedirs("results", exist_ok=True)
         return f"results/{prefix}{default_name}.png"
+
+    def _get_label(self, key: str) -> str:
+        """Extract a human-readable label from a generator key, ignoring country."""
+        parts = key.split("_")
+        try:
+            type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+            # everything after the type token is COUNTRY_tech, but country may
+            # contain underscores (e.g. DE_LU), so match against known countries
+            remainder = parts[type_idx + 1:]  # e.g. ["DE", "LU", "CCGT"]
+            known_countries = [b.replace("bus_", "") for b in self.network.buses.index]
+            # try progressively longer country prefixes until one matches
+            country_token = ""
+            tech_parts = remainder
+            for i in range(1, len(remainder)):
+                candidate = "_".join(remainder[:i])
+                if candidate in known_countries:
+                    country_token = candidate
+                    tech_parts = remainder[i:]
+            normalized = "_".join(parts[:type_idx + 1]) + "_" + "_".join(tech_parts)
+        except StopIteration:
+            normalized = key
+            tech_parts = parts
+
+        return self.LABEL_MAP.get(normalized, "_".join(tech_parts))
     
     # CHANGE: modified the names of each technology as their saved with the country code 
     LABEL_MAP = {
+        "generator_conv_CCGT": "CCGT",
+        "generator_conv_nuclear": "Nuclear",
+        "generator_conv_biomass CHP": "Biomass CHP",
+        "generator_vol_solar-rooftop": "Solar Rooftop",
+        "generator_vol_solar-utility": "Solar Utility",
+        "generator_vol_onwind": "Onshore Wind",
+        "generator_vol_offwind": "Offshore Wind",
+        "generator_storage_Pumped-Storage-Hydro-bicharger": "Pumped Storage",
+        "generator_vol_hydro": "Hydro",
+        "generator_conv_oil": "Oil",
+        "generator_conv_coal": "Coal",
+
         # BE
         "generator_conv_BE_CCGT": "BE CCGT",
         "generator_conv_BE_nuclear": "BE Nuclear",
@@ -133,7 +183,7 @@ class Visualizer:
                 axes[idx].plot(
                     series.index,
                     series.values / 1000,  # Convert MWh to GWh
-                    label=self.LABEL_MAP.get(label, label),
+                    label=self._get_label(label),
                     color=color,
                     linewidth=1.4,
                     alpha=0.9,
@@ -194,9 +244,9 @@ class Visualizer:
         # --- build a global colour map keyed by technology label ---
         # collect all unique labels across all countries
         all_keys = sorted({k for c in country_totals.values() for k in c.keys()})
-        all_labels = [self.LABEL_MAP.get(k, k) for k in all_keys]
+        all_labels = [self._get_label(key) for key in all_keys]
         label_to_color = {
-            label: cm.tab10(i / len(all_labels))
+            label: self.TECH_COLORS.get(label, cm.tab10(i / len(all_labels)))
             for i, label in enumerate(all_labels)
         }
 
@@ -223,7 +273,7 @@ class Visualizer:
 
             left = 0.0
             for key, value in totals.items():
-                label = self.LABEL_MAP.get(key, key)
+                label = self._get_label(key)
                 color = label_to_color[label]
                 pct   = value / total_disp * 100
 
@@ -315,7 +365,7 @@ class Visualizer:
 
         Saves the figure to 'results/sensitivity_capacity_to_weather_years.png'.
         """
-        labels = [self.LABEL_MAP.get(k, k) for k in self.capacity_dict.keys()]
+        labels = [self._get_label(key) for key in self.capacity_dict.keys()]
 
         data = []
         for v in self.capacity_dict.values():
@@ -481,7 +531,7 @@ class Visualizer:
                 ax.plot(
                     diff.index,
                     diff.values / 1000,          # MWh → GWh
-                    label=self.LABEL_MAP.get(key, key),
+                    label=self._get_label(key),
                     color=color,
                     linewidth=1.4,
                     alpha=0.9,
@@ -561,7 +611,7 @@ class Visualizer:
             ax_soc   = axes[s_idx * 2 + 1]
 
             for unit, color in zip(storage_units, colors):
-                label = self.LABEL_MAP.get(unit, unit)
+                label = self._get_label(unit)
 
                 # --- power ---
                 power = self.network.storage_units_t.p[unit].loc[start:end]
@@ -617,5 +667,154 @@ class Visualizer:
             fontsize=12, framealpha=0.7, bbox_to_anchor=(0.5, -0.04),
         )
 
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+    
+    def plot_scenario_comparison(
+        self,
+        other: "Visualizer",
+        self_label: str = "C",
+        other_label: str = "F",
+        name: str = "scenario_comparison",
+    ) -> None:
+        """
+        Grouped vertical bar chart comparing dispatch (TWh) per technology
+        between two scenarios for Belgium.
+        """
+        # collect all technology labels across both scenarios
+        all_keys = sorted(
+            set(self.dispatch_series_dict.keys()) | set(other.dispatch_series_dict.keys())
+        )
+        all_labels = [self._get_label(k) for k in all_keys]
+
+        # deduplicate while preserving order
+        seen = {}
+        for key, label in zip(all_keys, all_labels):
+            if label not in seen:
+                seen[label] = key
+        unique_labels = list(seen.keys())
+        unique_keys   = list(seen.values())
+
+        def get_twh(vis, key):
+            s = vis.dispatch_series_dict.get(key)
+            return s.sum() / 1e6 if s is not None else 0.0
+
+        values_self  = [get_twh(self, k)  for k in unique_keys]
+        values_other = [get_twh(other, k) for k in unique_keys]
+
+        x      = np.arange(len(unique_labels))
+        width  = 0.35
+        colors = [self.TECH_COLORS.get(l, cm.tab10(i / len(unique_labels)))
+                for i, l in enumerate(unique_labels)]
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        for i, (label, v_self, v_other, color) in enumerate(
+            zip(unique_labels, values_self, values_other, colors)
+        ):
+            ax.bar(x[i] - width / 2, v_self,  width, color=color, alpha=1.0,
+                edgecolor="white", linewidth=0.8)
+            ax.bar(x[i] + width / 2, v_other, width, color=color, alpha=0.45,
+                edgecolor="white", linewidth=0.8)
+
+        # scenario legend entries
+        from matplotlib.patches import Patch
+        scenario_handles = [
+            Patch(facecolor="grey", alpha=1.0,  label=self_label),
+            Patch(facecolor="grey", alpha=0.45, label=other_label),
+        ]
+        # technology legend entries
+        tech_handles = [
+            Patch(facecolor=self.TECH_COLORS.get(l, cm.tab10(i / len(unique_labels))),
+                label=l)
+            for i, l in enumerate(unique_labels)
+        ]
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(unique_labels, fontsize=10)
+        ax.set_ylabel("Dispatch (TWh)", fontsize=12)
+        ax.set_ylim(bottom=0)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+
+        # two-part legend: scenarios on top, technologies below
+        leg1 = ax.legend(handles=scenario_handles, loc="upper right", fontsize=10,
+                        framealpha=0.7, title="Scenario")
+        ax.add_artist(leg1)
+        ax.legend(handles=tech_handles, loc="upper left", fontsize=9,
+                framealpha=0.7, title="Technology", ncol=2)
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+
+    def plot_co2_sensitivity(
+        self,
+        networks_f: dict,
+        ref_co2: float,
+        name: str = "co2_sensitivity",
+    ) -> None:
+        """
+        Stacked area chart showing dispatch (TWh) per technology as a function
+        of the CO2 constraint expressed as % of the 1990 reference level.
+        """
+        # collect all technology labels across all solved networks
+        all_keys = sorted({
+            k
+            for nf in networks_f.values()
+            for k in nf.network.generators.index
+        })
+        all_labels = [self._get_label(k) for k in all_keys]
+
+        # deduplicate
+        seen = {}
+        for key, label in zip(all_keys, all_labels):
+            if label not in seen:
+                seen[label] = key
+        unique_labels = list(seen.keys())
+        unique_keys   = list(seen.values())
+
+        # x-axis: CO2 % levels, sorted ascending
+        percents = sorted(networks_f.keys())
+        x_vals   = [p * 100 for p in percents]   # 0 → 100
+
+        # dispatch matrix: shape (n_techs, n_co2_levels)
+        dispatch = np.zeros((len(unique_keys), len(percents)))
+        for j, percent in enumerate(percents):
+            nf = networks_f[percent]
+            for i, key in enumerate(unique_keys):
+                if key in nf.network.generators_t.p.columns:
+                    dispatch[i, j] = nf.network.generators_t.p[key].sum() / 1e6
+
+        colors = [
+            self.TECH_COLORS.get(l, cm.tab10(i / len(unique_labels)))
+            for i, l in enumerate(unique_labels)
+        ]
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        # stacked area: fill between cumulative sums
+        bottom = np.zeros(len(percents))
+        for i, (label, color) in enumerate(zip(unique_labels, colors)):
+            top = bottom + dispatch[i]
+            ax.fill_between(x_vals, bottom, top, color=color, alpha=0.85,
+                            label=label, linewidth=0)
+            bottom = top
+
+        # reference line at 100%
+        ax.axvline(100, color="black", linewidth=1, linestyle="--", alpha=0.5,
+                label="1990 reference")
+
+        ax.set_xlabel("CO₂ constraint (% of 1990 reference)", fontsize=12)
+        ax.set_ylabel("Dispatch (TWh)", fontsize=12)
+        ax.set_xlim(min(x_vals), max(x_vals))
+        ax.set_ylim(bottom=0)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+        ax.legend(loc="upper left", fontsize=9, framealpha=0.7,
+                ncol=2, title="Technology")
+
+        fig.tight_layout()
         plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
         plt.close()
