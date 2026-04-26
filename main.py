@@ -57,58 +57,59 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
 # TASK A
-# input_data_a = InputHandler(CONFIG_A)
-# network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_a.plot_annual_electricity_mix()
+input_data_a = InputHandler(CONFIG_A)
+network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_a.plot_annual_electricity_mix()
+visualizer_a.plot_installed_capacity()
 
-# # TASK B
-# input_data_b = InputHandler(CONFIG_B)
-# networks = {}
-# capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
+# TASK B
+input_data_b = InputHandler(CONFIG_B)
+networks = {}
+capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
 
-# for year in CONFIG_B["years"]:
-#     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
-#     networks[year] = network_b
-#     for gen in network_b.network.generators.index: # CHANGE: loop through generators to get capacity per technology for each year
-#         cap = network_b.network.generators.loc[gen, "p_nom_opt"]
-#         if gen not in capacity_by_tech:
-#             capacity_by_tech[gen] = []
-#         capacity_by_tech[gen].append(cap)
+for year in CONFIG_B["years"]:
+    network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
+    networks[year] = network_b
+    for gen in network_b.network.generators.index: # CHANGE: loop through generators to get capacity per technology for each year
+        cap = network_b.network.generators.loc[gen, "p_nom_opt"]
+        if gen not in capacity_by_tech:
+            capacity_by_tech[gen] = []
+        capacity_by_tech[gen].append(cap)
 
-# # Calls to the visualizer b function
-# visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-# visualizer_b.capacity_dict = capacity_by_tech
-# visualizer_b.plot_sensitivity_capacity_to_weather_years()
-
-# # Calls to the visualizer b function
-# visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-# visualizer_cf.plot_capacity_factors(input_data_b)
+visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+visualizer_b.capacity_dict = capacity_by_tech
+visualizer_b.plot_sensitivity_capacity_to_weather_years()
+visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+visualizer_cf.plot_capacity_factors(input_data_b)
 
 # TASK C
 input_data_c = InputHandler(CONFIG_C)
 network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
-# visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
-# visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_c.plot_dispatch_diff_time_series(
-#     other=visualizer_a,
-#     start_summer=pd.Timestamp("2023-07-01"),
-#     start_winter=pd.Timestamp("2023-12-01"),
-# )
-# visualizer_c.plot_annual_electricity_mix()
-# visualizer_c.plot_storage_behavior(
-#     start_summer=pd.Timestamp("2023-07-01"),
-#     start_winter=pd.Timestamp("2023-12-01"),
-# )
+visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
+visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_c.plot_dispatch_diff_time_series(
+    other=visualizer_a,
+    start_summer=pd.Timestamp("2023-07-01"),
+    start_winter=pd.Timestamp("2023-12-01"),
+)
+visualizer_c.plot_annual_electricity_mix()
+visualizer_c.plot_storage_behavior(
+    start_summer=pd.Timestamp("2023-07-01"),
+    start_winter=pd.Timestamp("2023-12-01"),
+)
+visualizer_c.plot_installed_capacity()
 
 # TASK D
-# input_data_d = InputHandler(CONFIG_D)
-# network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
-# visualizer_d = Visualizer(network_d.network, scenario_name = 'd')
-# visualizer_d.plot_annual_electricity_mix()
+input_data_d = InputHandler(CONFIG_D)
+network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
+visualizer_d = Visualizer(network_d.network, scenario_name = 'd')
+visualizer_d.plot_annual_electricity_mix()
+visualizer_d.plot_installed_capacity()
 
-# TASK F
+
+# # TASK F
 # input_data_f = InputHandler(CONFIG_F)
 # REF_CO2 = CONFIG_F["global_CO2_limit"]
 

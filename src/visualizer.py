@@ -354,6 +354,182 @@ class Visualizer:
         plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
         plt.close()
 
+    def plot_installed_capacity(self, name="installed_capacity") -> None:
+        """
+        Plot and save a stacked horizontal bar chart of installed capacities (MW).
+        One bar per country, with consistent technology colours and a shared legend.
+        Works for both single-country (C) and multi-country (D) setups.
+        """
+        # --- gather capacity per country ---
+        country_capacities = {}  # {country: {key: MW}}
+
+        # generators
+        for gen in self.network.generators.index:
+            cap = self.network.generators.loc[gen, "p_nom_opt"]
+            if cap <= 0:
+                continue
+            parts = gen.split("_")
+            try:
+                type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+                remainder = parts[type_idx + 1:]
+                known_countries = [b.replace("bus_", "") for b in self.network.buses.index]
+                country = ""
+                for i in range(1, len(remainder)):
+                    candidate = "_".join(remainder[:i])
+                    if candidate in known_countries:
+                        country = candidate
+                        break
+            except StopIteration:
+                country = "unknown"
+
+            if not country:
+                country = "unknown"
+            if country not in country_capacities:
+                country_capacities[country] = {}
+            country_capacities[country][gen] = cap
+
+        # storage units
+        for su in self.network.storage_units.index:
+            cap = self.network.storage_units.loc[su, "p_nom_opt"]
+            if cap <= 0:
+                continue
+            parts = su.split("_")
+            try:
+                type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+                remainder = parts[type_idx + 1:]
+                known_countries = [b.replace("bus_", "") for b in self.network.buses.index]
+                country = ""
+                for i in range(1, len(remainder)):
+                    candidate = "_".join(remainder[:i])
+                    if candidate in known_countries:
+                        country = candidate
+                        break
+            except StopIteration:
+                country = "unknown"
+
+            if not country:
+                country = "unknown"
+            if country not in country_capacities:
+                country_capacities[country] = {}
+            country_capacities[country][su] = cap
+
+        countries = list(country_capacities.keys())
+
+        # --- global colour map keyed by technology label ---
+        all_keys = sorted({k for c in country_capacities.values() for k in c.keys()})
+        all_labels = [self._get_label(k) for k in all_keys]
+        seen = {}
+        for key, label in zip(all_keys, all_labels):
+            if label not in seen:
+                seen[label] = key
+        unique_labels = list(seen.keys())
+
+        label_to_color = {
+            label: self.TECH_COLORS.get(label, cm.tab10(i / len(unique_labels)))
+            for i, label in enumerate(unique_labels)
+        }
+
+        # --- layout ---
+        n_countries      = len(countries)
+        BAR_HEIGHT       = 0.5
+        BAR_SPACING      = 1.0
+        INLINE_THRESHOLD = 8    # % of total bar width
+        stagger_offsets  = [0.0, 0.18]
+
+        fig_height = max(3, n_countries * 1.8 + 1.5)
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+
+        legend_handles = {}
+        all_outside    = []
+
+        for c_idx, country in enumerate(countries):
+            bar_y = c_idx * BAR_SPACING
+            caps  = country_capacities[country]
+            total = sum(caps.values())
+
+            # sort descending
+            caps = dict(sorted(caps.items(), key=lambda x: x[1], reverse=True))
+
+            left = 0.0
+            for key, cap in caps.items():
+                label = self._get_label(key)
+                color = label_to_color[label]
+                pct   = cap / total * 100
+
+                bar = ax.barh(
+                    bar_y, pct, left=left,
+                    height=BAR_HEIGHT,
+                    color=color,
+                    edgecolor="white",
+                    linewidth=1.2,
+                )
+
+                if label not in legend_handles:
+                    legend_handles[label] = bar[0]
+
+                mid_x = left + pct / 2
+
+                if pct >= INLINE_THRESHOLD:
+                    ax.text(
+                        mid_x, bar_y,
+                        f"{label}\n{cap/1000:,.2f} GW",
+                        va="center", ha="center",
+                        fontsize=7.5, color="white", fontweight="bold",
+                    )
+                else:
+                    all_outside.append((mid_x, label, cap, bar_y))
+
+                left += pct
+
+            # total label to the right
+            ax.text(
+                101, bar_y,
+                f"Total: {total/1000:,.2f} GW",
+                va="center", ha="left",
+                fontsize=8.5, fontstyle="italic",
+            )
+
+        # --- outside labels with leader lines ---
+        from itertools import groupby
+        all_outside_sorted = sorted(all_outside, key=lambda x: x[3])
+        for bar_y, group in groupby(all_outside_sorted, key=lambda x: x[3]):
+            for idx, (mid_x, label, cap, _) in enumerate(group):
+                y_offset = stagger_offsets[idx % len(stagger_offsets)]
+                label_y  = bar_y + BAR_HEIGHT / 2 + 0.18 + y_offset
+                ax.annotate(
+                    f"{label}: {cap/1000:,.2f} GW",
+                    xy        =(mid_x, bar_y + BAR_HEIGHT / 2),
+                    xytext    =(mid_x, label_y),
+                    ha        ="center", va="bottom",
+                    fontsize  =7.5,
+                    arrowprops=dict(arrowstyle="-", color="black", lw=0.8),
+                )
+
+        # --- axes formatting ---
+        ax.set_xlim(0, 100)
+        ax.set_ylim(
+            -BAR_HEIGHT,
+            (n_countries - 1) * BAR_SPACING + BAR_HEIGHT + 0.8,
+        )
+        ax.set_yticks([c * BAR_SPACING for c in range(n_countries)])
+        ax.set_yticklabels(countries, fontsize=11)
+        ax.set_xlabel("Share of Total Installed Capacity (%)")
+        ax.spines[["top", "right", "left"]].set_visible(False)
+
+        ax.legend(
+            handles=list(legend_handles.values()),
+            labels=list(legend_handles.keys()),
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.15),
+            ncol=min(len(legend_handles), 4),
+            frameon=False,
+            fontsize=9,
+        )
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
     
     def plot_sensitivity_capacity_to_weather_years(self, name="sensitivity_capacity_to_weather_years") -> None:
         """
