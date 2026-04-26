@@ -188,6 +188,6 @@ class NetworkBuilder:
         self.network.add(
             "GlobalConstraint",
             "CO2Limit",
-            carrier_attribute="CO2_emissions",
+            carrier_attribute="co2_emissions",
             sense="<=",
             constant=self.config["global_CO2_limit"])
