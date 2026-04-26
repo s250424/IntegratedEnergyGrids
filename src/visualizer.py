@@ -16,10 +16,23 @@ class Visualizer:
         self.network = n
         dispatch_series_dict = {}
         capacity_dict = {}
-        print(n.generators.index)
+
+        # --- generators ---
         for gen in n.generators.index:
             dispatch_series_dict[gen] = n.generators_t.p[gen]
             capacity_dict[gen] = n.generators.loc[gen, "p_nom_opt"]
+
+        # --- links: only those whose bus1 is an electricity bus ---
+        for link in n.links.index:
+            bus1 = n.links.loc[link, "bus1"]
+            # electricity buses follow the pattern "bus_{country}" with no suffix
+            bus1_name = bus1.replace("bus_", "")
+            if "_" not in bus1_name:  # excludes bus_BE_heat, bus_BE_ch4 etc.
+                if link in n.links_t.p1.columns:
+                    # p1 is negative in PyPSA convention (power into bus1)
+                    dispatch_series_dict[link] = -n.links_t.p1[link]
+                    capacity_dict[link] = n.links.loc[link, "p_nom_opt"]
+
         self.dispatch_series_dict = dispatch_series_dict
         self.capacity_dict = capacity_dict
         self.scenario_name = scenario_name
@@ -33,7 +46,7 @@ class Visualizer:
             "Onshore Wind":   "#74c0e0",
             "Offshore Wind":  "#1f77b4",
             "Pumped Storage": "#8c564b",
-            "hydro":          "#17becf",
+            "Hydro":          "#17becf",
             "Oil":            "#d62728",
             "Coal":           "#8c564b",
         }
@@ -83,6 +96,12 @@ class Visualizer:
         "generator_vol_hydro": "Hydro",
         "generator_conv_oil": "Oil",
         "generator_conv_coal": "Coal",
+        "generator_disp_CCGT":             "CCGT",
+        "generator_disp_nuclear":          "Nuclear",
+        "generator_disp_biomass CHP":      "Biomass CHP",
+        "generator_disp_OCGT":             "OCGT",
+        "generator_disp_oil":              "Oil",
+        "generator_disp_coal":             "Coal",
 
         # BE
         "generator_conv_BE_CCGT": "BE CCGT",
@@ -589,49 +608,52 @@ class Visualizer:
     
     def plot_capacity_factors(self, input_data, country="BE", name="capacity_factors"):
         """
-        Plot capacity factors for different years for each renewable technology.
+        Plot monthly average capacity factors per technology, with one line per
+        year, all overlaid on a single Jan–Dec x-axis.
         """
-
         available_techs = input_data.cf[(country, input_data.config["years"][0])].columns
-        technologies = [tech for tech in ["solar-utility", "onwind", "offwind", "hydro"] if tech in available_techs]
+        technologies = [tech for tech in ["solar-utility", "onwind", "offwind", "hydro"]
+                        if tech in available_techs]
         label_tech_map = {
-            "solar-utility": "Solar",  
-            "onwind": "Onshore Wind",
-            "offwind": "Offshore Wind",
-            "hydro": "Hydro",
+            "solar-utility": "Solar",
+            "onwind":        "Onshore Wind",
+            "offwind":       "Offshore Wind",
+            "hydro":         "Hydro",
         }
 
-        fig, axes = plt.subplots(len(technologies), 1, figsize=(12, 8), sharex=True)
+        years  = input_data.config["years"]
+        colors = [cm.tab10(i / len(years)) for i in range(len(years))]
+        months = np.arange(1, 13)
+        month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+        fig, axes = plt.subplots(1, len(technologies), figsize=(14, 4), sharey=True)
+        if len(technologies) == 1:
+            axes = [axes]
 
         for i, tech in enumerate(technologies):
-            for year in input_data.config["years"]:
-                cf = input_data.cf[(country, year)][tech]
+                ax = axes[i]
+                for year, color in zip(years, colors):
+                    cf = input_data.cf[(country, year)][tech]
+                    monthly_mean = cf.groupby(cf.index.month).mean()
+                    ax.plot(
+                        monthly_mean.index,
+                        monthly_mean.values,
+                        color=color,
+                        linewidth=1.8,
+                        label=str(year),
+                    )
 
-                axes[i].plot(
-                cf.index,
-                cf.values,
-                alpha=0.5,
-                linewidth=0.3
-            )
+                ax.set_title(label_tech_map.get(tech, tech), fontsize=11)
+                ax.set_ylim(0, 0.8)
+                ax.set_xticks(months)
+                ax.set_xticklabels(month_labels, fontsize=9, rotation=45)
+                ax.grid(alpha=0.3, linestyle="--")
+                ax.spines[["top", "right"]].set_visible(False)
 
-                #  monthly mean to see the seasonal pattern more clearly
-                monthly_mean = cf.resample("ME").mean()
-
-                axes[i].plot(
-                    monthly_mean.index,
-                    monthly_mean.values,
-                    linewidth=1.8,
-                    linestyle="-",
-                    label=f"{year} (monthly avg)"
-                )
-            axes[i].xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-            axes[i].xaxis.set_major_formatter(mdates.DateFormatter('%b'))
-            axes[i].set_ylabel(label_tech_map.get(tech, tech))
-            axes[i].set_ylim(0, 1)
-            axes[i].grid(alpha=0.3)
-
-        axes[-1].set_xlabel("Time")
-        axes[0].legend(title="Year")
+        axes[0].set_ylabel("Capacity Factor", fontsize=11)
+        axes[0].legend(title="Year", fontsize=9, framealpha=0.7, ncol=1, 
+               loc="upper left", bbox_to_anchor=(0.08, 1.0))
 
         fig.tight_layout()
         plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
@@ -990,6 +1012,194 @@ class Visualizer:
         ax.grid(axis="y", linestyle="--", alpha=0.4)
         ax.legend(loc="upper left", fontsize=9, framealpha=0.7,
                 ncol=2, title="Technology")
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_line_utilisation_bar(
+        self,
+        name: str = "line_utilisation_bar",
+    ) -> None:
+        """
+        Grouped bar chart showing average and peak utilisation (%) for each line.
+        """
+        lines      = self.network.lines
+        flows      = self.network.lines_t.p0
+
+        if lines.empty:
+            print("No lines found in network — skipping plot.")
+            return
+
+        line_names = lines.index.tolist()
+        avg_util   = (flows.abs().mean() / lines["s_nom"] * 100).reindex(line_names).fillna(0)
+        peak_util  = (flows.abs().max()  / lines["s_nom"] * 100).reindex(line_names).fillna(0)
+
+        x     = np.arange(len(line_names))
+        width = 0.35
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        ax.bar(x - width / 2, avg_util.values,  width, label="Average utilisation",
+            color="#1f77b4", alpha=0.85, edgecolor="white", linewidth=0.8)
+        ax.bar(x + width / 2, peak_util.values, width, label="Peak utilisation",
+            color="#e07b3b", alpha=0.85, edgecolor="white", linewidth=0.8)
+
+        # value labels on top of each bar
+        for xi, (avg, peak) in enumerate(zip(avg_util.values, peak_util.values)):
+            ax.text(xi - width / 2, avg  + 0.5, f"{avg:.1f}%",  ha="center", va="bottom", fontsize=8)
+            ax.text(xi + width / 2, peak + 0.5, f"{peak:.1f}%", ha="center", va="bottom", fontsize=8)
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(line_names, fontsize=10)
+        ax.set_ylabel("Utilisation (%)", fontsize=12)
+        ax.set_ylim(0, max(peak_util.max() * 1.15, 10))
+        ax.axhline(100, color="red", linewidth=0.8, linestyle="--", alpha=0.5, label="100% capacity")
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+        ax.legend(fontsize=10, framealpha=0.7)
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+
+    def plot_network_diagram(
+        self,
+        name: str = "network_diagram",
+    ) -> None:
+        """
+        Schematic network diagram with countries as nodes and lines as edges,
+        coloured by average utilisation (green → red).
+        """
+        import matplotlib.cm as mcm
+        import matplotlib.colors as mcolors
+        from matplotlib.patches import FancyArrowPatch
+
+        network_lines = self.network.lines
+        flows         = self.network.lines_t.p0
+
+        if network_lines.empty:
+            print("No lines found in network — skipping plot.")
+            return
+
+        # approximate geographic positions {country: (lon, lat)} in plot units
+        COUNTRY_POS = {
+            "BE":    (4.5,  50.8),
+            "FR":    (2.5,  46.5),
+            "NL":    (5.3,  52.3),
+            "DE_LU": (10.0, 51.2),
+        }
+
+        # fall back to circle layout for any country not in the map
+        buses = [b.replace("bus_", "") for b in self.network.buses.index
+                if "heat" not in b and "ch4" not in b]
+        for i, bus in enumerate(buses):
+            if bus not in COUNTRY_POS:
+                angle = 2 * np.pi * i / len(buses)
+                COUNTRY_POS[bus] = (5 + 3 * np.cos(angle), 50 + 3 * np.sin(angle))
+
+        # utilisation per line
+        #avg_util = (flows.abs().mean() / lines["s_nom"] * 100).fillna(0) # %
+        avg_flow = flows.abs().mean().fillna(0)          # MW
+        avg_util = (avg_flow / network_lines["s_nom"] * 100).fillna(0)   # % for colour
+
+        cmap  = mcm.RdYlGn_r          # green=low, red=high
+        norm  = mcolors.Normalize(vmin=80, vmax=100)
+        sm    = mcm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+
+        fig, ax = plt.subplots(figsize=(8, 7))
+
+        # --- draw lines ---
+        for line_name, row in network_lines.iterrows():
+            bus0 = row["bus0"].replace("bus_", "")
+            bus1 = row["bus1"].replace("bus_", "")
+
+            if bus0 not in COUNTRY_POS or bus1 not in COUNTRY_POS:
+                continue
+
+            x0, y0 = COUNTRY_POS[bus0]
+            x1, y1 = COUNTRY_POS[bus1]
+            util    = avg_util.get(line_name, 0)
+            color   = cmap(norm(util))
+
+            ax.plot([x0, x1], [y0, y1], color=color, linewidth=3, solid_capstyle="round", zorder=1)
+
+            # utilisation label at midpoint
+            mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+            ax.text(mx, my, f"{avg_flow.get(line_name, 0):,.0f} MW", ha="center", va="center",
+                fontsize=8, fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8),
+                zorder=3)
+
+        # --- draw nodes ---
+        for bus in buses:
+            if bus not in COUNTRY_POS:
+                continue
+            x, y = COUNTRY_POS[bus]
+            ax.scatter(x, y, s=600, color="#2c3e50", zorder=4)
+            ax.text(x, y, bus, ha="center", va="center",
+                    fontsize=9, fontweight="bold", color="white", zorder=5)
+
+        # --- colorbar ---
+        cbar = fig.colorbar(sm, ax=ax, orientation="vertical", fraction=0.03, pad=0.02)
+        cbar.set_label("Average utilisation (%)", fontsize=10)
+
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set_title("Transmission line utilisation", fontsize=13, pad=12)
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_load_duration_curve(
+        self,
+        name: str = "load_duration_curve",
+    ) -> None:
+        """
+        Plot a load duration curve for total generation and each technology.
+        Each series is independently sorted descending. X-axis shows hours,
+        Y-axis shows power in MW.
+        """
+        fig, ax = plt.subplots(figsize=(12, 5))
+
+        # --- total generation ---
+        total = sum(s for s in self.dispatch_series_dict.values())
+        total_sorted = np.sort(total.values)[::-1]/1000  # MW → GW
+        hours = np.arange(1, len(total_sorted) + 1)
+
+        ax.plot(
+            hours, total_sorted,
+            color="black", linewidth=2.5, label="Total", zorder=5
+        )
+
+        # --- per technology ---
+        for key, series in self.dispatch_series_dict.items():
+            if series.sum() <= 0:
+                continue
+            label = self._get_label(key)
+            color = self.TECH_COLORS.get(label, cm.tab10(
+                list(self.dispatch_series_dict.keys()).index(key) /
+                len(self.dispatch_series_dict)
+            ))
+            sorted_series = np.sort(series.values)[::-1]/1000  # MW → GW
+
+            ax.plot(
+                np.arange(1, len(sorted_series) + 1),
+                sorted_series,
+                color=color, linewidth=1.2, alpha=0.85, label=label,
+            )
+
+        ax.set_xlabel("Hours (sorted)", fontsize=12)
+        ax.set_ylabel("Power (GW)", fontsize=12)
+        ax.set_xlim(0, len(total_sorted))
+        ax.set_ylim(bottom=0)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+        ax.grid(axis="x", linestyle=":", alpha=0.3)
+        ax.legend(fontsize=9, framealpha=0.7, ncol=2)
 
         fig.tight_layout()
         plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
