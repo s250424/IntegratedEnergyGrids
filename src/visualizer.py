@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.lines as mlines
@@ -6,12 +8,9 @@ import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 import pypsa
-import os
-
-from requests import patch
-
 
 class Visualizer:
+    """Visualizing the results of the pypsa optimization models."""
     def __init__(self, n: pypsa.Network, scenario_name: str = ""):
         self.network = n
         dispatch_series_dict = {}
@@ -36,6 +35,21 @@ class Visualizer:
         self.dispatch_series_dict = dispatch_series_dict
         self.capacity_dict = capacity_dict
         self.scenario_name = scenario_name
+        technologies_disp = ["biomass CHP", "CCGT", "coal", "gas boiler steam", "industrial heat pump high temperature", "nuclear", "OCGT"]
+        technologies_vol = ["offwind", "onwind", "solar"]
+        countries = ["FR", "BE", "NL", "DE_LU"]
+
+        self.LABEL_MAP = {}
+
+        for country in countries:
+            for tech in technologies_disp:
+                key = f"generator_disp_{country}_{tech}"
+                value = f"{country} {tech}"
+                self.LABEL_MAP[key] = value
+            for tech in technologies_vol:
+                key = f"generator_vol_{country}_{tech}"
+                value = f"{country} {tech}"
+                self.LABEL_MAP[key] = value
 
         self.TECH_COLORS = {
             "CCGT":           "#e07b3b",
@@ -63,7 +77,7 @@ class Visualizer:
         """Extract a human-readable label from a generator key, ignoring country."""
         parts = key.split("_")
         try:
-            type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+            type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
             # everything after the type token is COUNTRY_tech, but country may
             # contain underscores (e.g. DE_LU), so match against known countries
             remainder = parts[type_idx + 1:]  # e.g. ["DE", "LU", "CCGT"]
@@ -82,64 +96,6 @@ class Visualizer:
             tech_parts = parts
 
         return self.LABEL_MAP.get(normalized, "_".join(tech_parts))
-    
-    # CHANGE: modified the names of each technology as their saved with the country code 
-    LABEL_MAP = {
-        "generator_conv_CCGT": "CCGT",
-        "generator_conv_nuclear": "Nuclear",
-        "generator_conv_biomass CHP": "Biomass CHP",
-        "generator_vol_solar-rooftop": "Solar Rooftop",
-        "generator_vol_solar-utility": "Solar Utility",
-        "generator_vol_onwind": "Onshore Wind",
-        "generator_vol_offwind": "Offshore Wind",
-        "generator_storage_Pumped-Storage-Hydro-bicharger": "Pumped Storage",
-        "generator_vol_hydro": "Hydro",
-        "generator_conv_oil": "Oil",
-        "generator_conv_coal": "Coal",
-        "generator_disp_CCGT":             "CCGT",
-        "generator_disp_nuclear":          "Nuclear",
-        "generator_disp_biomass CHP":      "Biomass CHP",
-        "generator_disp_OCGT":             "OCGT",
-        "generator_disp_oil":              "Oil",
-        "generator_disp_coal":             "Coal",
-
-        # BE
-        "generator_conv_BE_CCGT": "BE CCGT",
-        "generator_conv_BE_nuclear": "BE Nuclear",
-        "generator_conv_BE_biomass CHP": "BE Biomass CHP",
-        "generator_vol_BE_solar-utility": "BE Solar",
-        "generator_vol_BE_onwind": "BE Onshore Wind",
-        "generator_vol_BE_offwind": "BE Offshore Wind",
-
-        # FR
-        "generator_conv_FR_CCGT": "FR CCGT",
-        "generator_conv_FR_nuclear": "FR Nuclear",
-        "generator_conv_FR_biomass CHP": "FR Biomass CHP",
-        "generator_vol_FR_solar-utility": "FR Solar",
-        "generator_vol_FR_onwind": "FR Onshore Wind",
-        "generator_vol_FR_offwind": "FR Offshore Wind",
-        "generator_vol_FR_hydro": "FR Hydro",
-
-        # NL
-        "generator_conv_NL_CCGT": "NL CCGT",
-        "generator_conv_NL_coal": "NL Coal",
-        "generator_conv_NL_oil": "NL Oil",
-        "generator_conv_NL_biomass CHP": "NL Biomass CHP",
-        "generator_vol_NL_solar-utility": "NL Solar",
-        "generator_vol_NL_onwind": "NL Onshore Wind",
-        "generator_vol_NL_offwind": "NL Offshore Wind",
-        "generator_vol_NL_hydro": "NL Hydro",
-
-        # DE_LU
-        "generator_conv_DE_LU_CCGT": "DE/LU CCGT",
-        "generator_conv_DE_LU_coal": "DE/LU Coal",
-        "generator_conv_DE_LU_oil": "DE/LU Oil",
-        "generator_conv_DE_LU_biomass CHP": "DE/LU Biomass CHP",
-        "generator_vol_DE_LU_solar-utility": "DE/LU Solar",
-        "generator_vol_DE_LU_onwind": "DE/LU Onshore Wind",
-        "generator_vol_DE_LU_offwind": "DE/LU Offshore Wind",
-        "generator_vol_DE_LU_hydro": "DE/LU Hydro",
-    }
 
 
     def plot_dispatch_time_series(
@@ -249,7 +205,7 @@ class Visualizer:
             parts = k.split("_")
             # country is the part after "conv" or "vol" or "storage"
             try:
-                type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+                type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
                 country = parts[type_idx + 1]
             except StopIteration:
                 country = "unknown"
@@ -389,7 +345,7 @@ class Visualizer:
                 continue
             parts = gen.split("_")
             try:
-                type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+                type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
                 remainder = parts[type_idx + 1:]
                 known_countries = [b.replace("bus_", "") for b in self.network.buses.index]
                 country = ""
@@ -414,7 +370,7 @@ class Visualizer:
                 continue
             parts = su.split("_")
             try:
-                type_idx = next(i for i, p in enumerate(parts) if p in ("conv", "vol", "storage"))
+                type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
                 remainder = parts[type_idx + 1:]
                 known_countries = [b.replace("bus_", "") for b in self.network.buses.index]
                 country = ""

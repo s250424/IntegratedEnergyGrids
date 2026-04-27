@@ -1,6 +1,7 @@
+from pathlib import Path
+
 from entsoe import EntsoePandasClient
 import pandas as pd 
-from pathlib import Path
 
 class InputHandler():
     """"Handles the input data required for the pypsa optimization model."""

@@ -1,6 +1,6 @@
-from src.input import InputHandler
 import pypsa
 
+from src.input import InputHandler
 
 class NetworkBuilder:
     """Builds and runs the Pypsa-optimization-model."""
@@ -316,7 +316,6 @@ class NetworkBuilder:
                     name=f"CH4_{line['name']}",
                     bus0=f"bus_{line['bus0']}_ch4",
                     bus1=f"bus_{line['bus1']}_ch4",
-                    # x=line["x"], # reactance is not relevant for methane transport, so not added
                     p_nom_extendable=True,
                 )
 

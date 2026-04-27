@@ -1,8 +1,8 @@
-import matplotlib
-matplotlib.use("Agg")  # non-interactive backend, no Qt needed
 import copy
 
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import numpy as np
 
 from src.input import InputHandler
@@ -57,13 +57,13 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
 # TASK A
-# input_data_a = InputHandler(CONFIG_A)
-# network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_a.plot_annual_electricity_mix()
-# visualizer_a.plot_installed_capacity()
-# visualizer_a.plot_load_duration_curve()
+input_data_a = InputHandler(CONFIG_A)
+network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_a.plot_annual_electricity_mix()
+visualizer_a.plot_installed_capacity()
+visualizer_a.plot_load_duration_curve()
 
 # # TASK B
 # input_data_b = InputHandler(CONFIG_B)
@@ -140,12 +140,12 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 # )
 
 # # TASK G
-input_data_g = InputHandler(CONFIG_G)
-network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
+# input_data_g = InputHandler(CONFIG_G)
+# network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
 
-visualizer_g = Visualizer(network_g.network, scenario_name="g")
-energy_transport_table = visualizer_g.plot_energy_transport_comparison()
-print(energy_transport_table)
+# visualizer_g = Visualizer(network_g.network, scenario_name="g")
+# energy_transport_table = visualizer_g.plot_energy_transport_comparison()
+# print(energy_transport_table)
 
 # # TASK H
 # input_data_h = InputHandler(CONFIG_H)
