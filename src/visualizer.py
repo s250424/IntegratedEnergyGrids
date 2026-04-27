@@ -1204,3 +1204,66 @@ class Visualizer:
         fig.tight_layout()
         plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
         plt.close()
+
+    def get_energy_transport_table(self):
+        """
+        Compute total transported energy by electricity lines and CH4 pipelines.
+        Returns a pandas DataFrame with values in TWh.
+        """
+        # Electricity transport through AC lines
+        electricity_transport = self.network.lines_t.p0.abs().sum().sum()
+
+        # Gas transport through CH4 pipeline links only
+        ch4_links = [link for link in self.network.links.index if link.startswith("CH4_")]
+
+        if ch4_links:
+            gas_transport = self.network.links_t.p0[ch4_links].abs().sum().sum()
+        else:
+            gas_transport = 0.0
+
+        data = {
+            "Network": ["Electricity", "CH4 gas"],
+            "Transported energy [TWh]": [
+                electricity_transport / 1e6,
+                gas_transport / 1e6,
+            ],
+        }
+
+        return pd.DataFrame(data)
+
+    def plot_energy_transport_comparison(self, name="energy_transport_comparison"):
+        """
+        Plot a bar chart comparing total transported energy in the electricity
+        network and the CH4 gas network.
+        """
+        transport_df = self.get_energy_transport_table()
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+        ax.bar(
+            transport_df["Network"],
+            transport_df["Transported energy [TWh]"],
+            edgecolor="white",
+            linewidth=1.0,
+        )
+
+        ax.set_ylabel("Transported energy [TWh]")
+        ax.set_title("Energy transport comparison")
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+
+        for i, value in enumerate(transport_df["Transported energy [TWh]"]):
+            ax.text(
+                i,
+                value,
+                f"{value:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+        return transport_df
