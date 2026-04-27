@@ -57,33 +57,33 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
 # TASK A
-input_data_a = InputHandler(CONFIG_A)
-network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-visualizer_a.plot_annual_electricity_mix()
-visualizer_a.plot_installed_capacity()
-visualizer_a.plot_load_duration_curve()
+# input_data_a = InputHandler(CONFIG_A)
+# network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_a.plot_annual_electricity_mix()
+# visualizer_a.plot_installed_capacity()
+# visualizer_a.plot_load_duration_curve()
 
-# TASK B
-input_data_b = InputHandler(CONFIG_B)
-networks = {}
-capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
+# # TASK B
+# input_data_b = InputHandler(CONFIG_B)
+# networks = {}
+# capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
 
-for year in CONFIG_B["years"]:
-    network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
-    networks[year] = network_b
-    for gen in network_b.network.generators.index: # CHANGE: loop through generators to get capacity per technology for each year
-        cap = network_b.network.generators.loc[gen, "p_nom_opt"]
-        if gen not in capacity_by_tech:
-            capacity_by_tech[gen] = []
-        capacity_by_tech[gen].append(cap)
+# for year in CONFIG_B["years"]:
+#     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
+#     networks[year] = network_b
+#     for gen in network_b.network.generators.index: # CHANGE: loop through generators to get capacity per technology for each year
+#         cap = network_b.network.generators.loc[gen, "p_nom_opt"]
+#         if gen not in capacity_by_tech:
+#             capacity_by_tech[gen] = []
+#         capacity_by_tech[gen].append(cap)
 
-visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_b.capacity_dict = capacity_by_tech
-visualizer_b.plot_sensitivity_capacity_to_weather_years()
-visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_cf.plot_capacity_factors(input_data_b)
+# visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_b.capacity_dict = capacity_by_tech
+# visualizer_b.plot_sensitivity_capacity_to_weather_years()
+# visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_cf.plot_capacity_factors(input_data_b)
 
 # # TASK C
 # input_data_c = InputHandler(CONFIG_C)
@@ -140,8 +140,12 @@ visualizer_cf.plot_capacity_factors(input_data_b)
 # )
 
 # # TASK G
-# input_data_g = InputHandler(CONFIG_G)
-# network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
+input_data_g = InputHandler(CONFIG_G)
+network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
+
+visualizer_g = Visualizer(network_g.network, scenario_name="g")
+energy_transport_table = visualizer_g.plot_energy_transport_comparison()
+print(energy_transport_table)
 
 # # TASK H
 # input_data_h = InputHandler(CONFIG_H)
