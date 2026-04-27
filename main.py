@@ -14,7 +14,7 @@ CONFIG_A = {
     "countries": ["BE"],    # must be the same naming convention as used by ENTSO-E
     "years": [2023],   # data in good quality available from ENTSO-E for 2015-2024
     "technologies_disp": ["biomass CHP", "CCGT", "coal", "gas boiler steam", "industrial heat pump high temperature", "nuclear", "OCGT"],  # must be the same naming convention as in cost list
-    "technologies_vol": ["offwind", "onwind", "solar-utility"],   # must be the same naming convention as in cost list
+    "technologies_vol": ["offwind", "onwind", "solar"],   # must be the same naming convention as in cost list
     'voltage_level': 400, # kV, specified by assignment guidelines
     'reactance': 0.1 # specified by assignment guidelines`
 }
@@ -79,11 +79,11 @@ for year in CONFIG_B["years"]:
             capacity_by_tech[gen] = []
         capacity_by_tech[gen].append(cap)
 
-visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_b.capacity_dict = capacity_by_tech
-visualizer_b.plot_sensitivity_capacity_to_weather_years()
-visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_cf.plot_capacity_factors(input_data_b)
+# visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_b.capacity_dict = capacity_by_tech
+# visualizer_b.plot_sensitivity_capacity_to_weather_years()
+# visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_cf.plot_capacity_factors(input_data_b)
 
 # # TASK C
 # input_data_c = InputHandler(CONFIG_C)

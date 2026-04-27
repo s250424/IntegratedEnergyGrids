@@ -21,7 +21,7 @@ class NetworkBuilder:
         
         """>>>> ADD COMPONENTS TO PYPSA NETWORK <<<<"""
         self._add_buses_carrier_stocks()
-        self._add_loads(year)
+        self._add_loads()
         self._add_dispatchable_generators()
         self._add_volatile_generators(year)
         if len(self.config["countries"]) > 1:
@@ -51,8 +51,9 @@ class NetworkBuilder:
 
         # dispatchable with stock & busses
         self.network.add("Carrier", "ch4", co2_emissions=self.tech_data.loc[("gas", "CO2 intensity"), "value"]) # t CO2/MWh
-        self.network.add("Carrier", "heat")
         self.network.add("Carrier", "biomass", co2_emissions=self.tech_data.loc[("solid biomass", "CO2 intensity"), "value"])   # t CO2/MWh
+        self.network.add("Carrier", "electricity")
+        self.network.add("Carrier", "heat")
 
         # dispatchable without stock & busses
         self.network.add("Carrier", "coal", co2_emissions=self.tech_data.loc[("coal", "CO2 intensity"), "value"])   # t CO2/MWh
@@ -63,7 +64,8 @@ class NetworkBuilder:
         self.network.add("Carrier", "offwind", co2_emissions=0.012) # t CO2/MWh, from Claude
         self.network.add("Carrier", "onwind", co2_emissions=0.011)  # t CO2/MWh, from Claude
 
-    def _add_loads(self, year):
+
+    def _add_loads(self, year=2023):
         for country in self.config["countries"]:
             demand = self.load[(country, year)]
             self.network.set_snapshots(demand.index)
@@ -74,7 +76,7 @@ class NetworkBuilder:
                 p_set=demand["Actual Load"],
             )
             if self.config.get("include_heat"):
-                heating_demand = self.load_heat[(country, year)]  # TODO still needs to be added in InputHandler
+                heating_demand = self.load_heat[(country, year)]
                 self.network.add(
                     "Load",
                     name=f"load_{country}_heat",
