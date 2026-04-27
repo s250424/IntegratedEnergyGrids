@@ -180,7 +180,7 @@ class NetworkBuilder:
                     name=line["name"],
                     bus0=f"bus_{line['bus0']}_ch4",
                     bus1=f"bus_{line['bus1']}_ch4",
-                    x=line["x"],
+                    # x=line["x"], # reactance is not relevant for methane transport, so not added
                     s_nom_extendable=True,
                 )
 
