@@ -55,8 +55,7 @@ class Visualizer:
             "CCGT":           "#e07b3b",
             "Nuclear":        "#9467bd",
             "Biomass CHP":    "#2ca02c",
-            "Solar Rooftop":  "#f7c948",
-            "Solar Utility":  "#f4e04d",
+            "Solar":          "#f4e04d",
             "Onshore Wind":   "#74c0e0",
             "Offshore Wind":  "#1f77b4",
             "Pumped Storage": "#8c564b",
@@ -568,10 +567,10 @@ class Visualizer:
         year, all overlaid on a single Jan–Dec x-axis.
         """
         available_techs = input_data.cf[(country, input_data.config["years"][0])].columns
-        technologies = [tech for tech in ["solar-utility", "onwind", "offwind", "hydro"]
+        technologies = [tech for tech in ["solar", "onwind", "offwind", "hydro"]
                         if tech in available_techs]
         label_tech_map = {
-            "solar-utility": "Solar",
+            "solar": "Solar",
             "onwind":        "Onshore Wind",
             "offwind":       "Offshore Wind",
             "hydro":         "Hydro",

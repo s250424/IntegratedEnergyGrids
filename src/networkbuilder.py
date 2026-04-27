@@ -113,7 +113,12 @@ class NetworkBuilder:
         # volatile
         self.network.add("Carrier", "solar", co2_emissions=0.043)   # t CO2/MWh, from Claude
         self.network.add("Carrier", "offwind", co2_emissions=0.012) # t CO2/MWh, from Claude
-        self.network.add("Carrier", "onwind", co2_emissions=0.011)  # t CO2/MWh, from Claude
+        self.network.add("Carrier", "onwind", co2_emissions=0.011)  #   , from Claude
+
+        # storage
+        self.network.add("Carrier", "Pumped-Storage-Hydro-bicharger")
+        self.network.add("Carrier", "Lithium-Ion-LFP-bicharger")
+
 
 
     def _add_loads(self, year:int=2023):
