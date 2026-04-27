@@ -4,7 +4,7 @@ import pypsa
 
 class NetworkBuilder:
     """Builds and runs the Pypsa-optimization-model."""
-    def __init__(self, config, input_data, year):
+    def __init__(self, config:dict, input_data:InputHandler, year:int):
         """
     Initialize the network model, build it, and run the optimization.
 
