@@ -52,16 +52,17 @@ class Visualizer:
                 self.LABEL_MAP[key] = value
 
         self.TECH_COLORS = {
-            "CCGT":           "#e07b3b",
-            "Nuclear":        "#9467bd",
-            "Biomass CHP":    "#2ca02c",
-            "Solar":          "#f4e04d",
-            "Onshore Wind":   "#74c0e0",
-            "Offshore Wind":  "#1f77b4",
+            "CCGT":           "#e96f23",
+            "OCGT":           "#a86326",
+            "nuclear":        "#9467bd",
+            "biomass CHP":    "#2ca02c",
+            "solar":          "#dbc12b",
+            "onwind":         "#74c0e0",
+            "offwind":        "#1f77b4",
             "Pumped Storage": "#8c564b",
             "Hydro":          "#17becf",
-            "Oil":            "#d62728",
-            "Coal":           "#8c564b",
+            "oil":            "#d62728",
+            "coal":           "#3D3D3D",
         }
 
     def _make_path(self, default_name: str) -> str:
@@ -122,8 +123,8 @@ class Visualizer:
             Start of the winter week (inclusive).
         """
         colors = [
-            cm.tab10(i / len(self.dispatch_series_dict))
-            for i in range(len(self.dispatch_series_dict))
+            self.TECH_COLORS.get(self._get_label(key), cm.tab10(i / len(self.dispatch_series_dict)))
+            for i, key in enumerate(self.dispatch_series_dict.keys())
         ]  # create colors dynamically
         end_summer = start_summer + pd.Timedelta(days=7)
         end_winter = start_winter + pd.Timedelta(days=7)
@@ -159,7 +160,7 @@ class Visualizer:
                     series.values / 1000,  # Convert MWh to GWh
                     label=self._get_label(label),
                     color=color,
-                    linewidth=1.4,
+                    linewidth=1.8,
                     alpha=0.9,
                 )
             axes[idx].set_ylabel("Dispatch (GWh)", fontsize=13)  # CHANGED: MWh -> GWh
@@ -182,7 +183,7 @@ class Visualizer:
         # CHANGED: replaced per-subplot legend with single shared figure legend
         handles, labels = axes[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc="lower center", ncol=len(handles),
-                fontsize=12, framealpha=0.7, bbox_to_anchor=(0.5, -0.08))
+                fontsize=16, framealpha=0.7, bbox_to_anchor=(0.5, -0.08))
 
         plt.savefig(self._make_path("dispatch_summer_winter"), dpi=150, bbox_inches="tight")
         plt.close()
@@ -386,6 +387,34 @@ class Visualizer:
             if country not in country_capacities:
                 country_capacities[country] = {}
             country_capacities[country][su] = cap
+
+        # links: only those whose bus1 is an electricity bus
+        for link in self.network.links.index:
+            bus1 = self.network.links.loc[link, "bus1"]
+            bus1_name = bus1.replace("bus_", "")
+            if "_" not in bus1_name:  # excludes heat, ch4 buses
+                cap = self.network.links.loc[link, "p_nom_opt"]
+                if cap <= 0:
+                    continue
+                parts = link.split("_")
+                try:
+                    type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
+                    remainder = parts[type_idx + 1:]
+                    known_countries = [b.replace("bus_", "") for b in self.network.buses.index]
+                    country = ""
+                    for i in range(1, len(remainder)):
+                        candidate = "_".join(remainder[:i])
+                        if candidate in known_countries:
+                            country = candidate
+                            break
+                except StopIteration:
+                    country = "unknown"
+
+                if not country:
+                    country = "unknown"
+                if country not in country_capacities:
+                    country_capacities[country] = {}
+                country_capacities[country][link] = cap
 
         countries = list(country_capacities.keys())
 
