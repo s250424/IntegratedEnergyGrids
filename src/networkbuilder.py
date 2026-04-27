@@ -3,7 +3,25 @@ import pypsa
 
 
 class NetworkBuilder:
+    """Builds and runs the Pypsa-optimization-model."""
     def __init__(self, config, input_data, year):
+        """
+    Initialize the network model, build it, and run the optimization.
+
+    Stores references to configuration and input data, then immediately
+    constructs and optimizes the PyPSA network for the given year.
+
+    Args:
+        config (dict): Model configuration specifying countries, technologies,
+            voltage level, CO2 limits, and other network parameters.
+        input_data: Object containing all preprocessed input data with attributes:
+            - load: electricity demand time series per country and year.
+            - load_heat: heat demand time series per country and year.
+            - tech_data: technology cost and performance parameters.
+            - cf: capacity factor time series per country and year.
+        year (int): The simulation year for which the network is built
+            and optimized.
+        """
         # Rename inputs for more convenient use
         self.config = config
         self.load = input_data.load
@@ -15,11 +33,27 @@ class NetworkBuilder:
         self._build_network(year)
         self.network.optimize()
 
-    def _build_network(self, year):
-        """>>>> INITIALIZE PYPSA NETWORK <<<<"""
+    def _build_network(self, year:int):
+        """
+    Initialize and assemble the full PyPSA network for a given simulation year.
+
+    Creates a fresh PyPSA network and sequentially adds all configured components:
+
+    - Buses, carriers, and energy stocks (always).
+    - Loads (always).
+    - Dispatchable and volatile generators (always).
+    - Transmission lines: only if more than one country is configured.
+    - Storage units: only if storage technologies are specified in config.
+    - Global CO2 constraint: only if a CO2 limit is specified in config.
+
+    Args:
+        year (int): The simulation year, passed to volatile generator and
+            load methods to select the appropriate time series data.
+        """
+        # INITIALIZE PYPSA NETWORK
         self.network = pypsa.Network()
         
-        """>>>> ADD COMPONENTS TO PYPSA NETWORK <<<<"""
+        # ADD COMPONENTS TO PYPSA NETWORK
         self._add_buses_carrier_stocks()
         self._add_loads()
         self._add_dispatchable_generators()
@@ -32,6 +66,23 @@ class NetworkBuilder:
             self._add_global_co2_limit()
 
     def _add_buses_carrier_stocks(self):
+        """
+    Add buses, energy stocks, and carriers to the network for each country.
+
+    For each configured country, adds four buses (electricity, CH4, heat, biomass)
+    and corresponding storage stocks:
+
+    - Biomass stock: always unlimited (e_initial=1e20).
+    - CH4 stock: if CH4 transmission lines are enabled, only the Netherlands ('NL')
+      gets an unlimited initial stock (acting as the gas import hub); all other
+      countries start empty. Without CH4 lines, all countries get unlimited stock.
+
+    Registers the following carriers with CO2 intensities (t CO2/MWh):
+
+    - ch4, biomass, coal: intensities sourced from technology data.
+    - electricity, heat: no CO2 intensity.
+    - nuclear, solar, offwind, onwind: fixed lifecycle emission factors.
+        """
         for country in self.config["countries"]:
             # add busses
             self.network.add("Bus", name=f"bus_{country}", v_nom=self.config["voltage_level"], carrier="electricity")
@@ -65,7 +116,26 @@ class NetworkBuilder:
         self.network.add("Carrier", "onwind", co2_emissions=0.011)  # t CO2/MWh, from Claude
 
 
-    def _add_loads(self, year=2023):
+    def _add_loads(self, year:int=2023):
+        """
+    Add electricity and optional heat loads to the network for a given year.
+
+    Iterates over all configured countries, setting network snapshots to match
+    the electricity demand index and adding an electricity 'Load' per country.
+    If heat is enabled in the config, a corresponding heat 'Load' is also added
+    to the country's heat bus.
+
+    Args:
+        year (int): The simulation year used to select demand time series.
+            Defaults to 2023.
+
+    Notes:
+        - Network snapshots are overwritten by each country's demand index;
+          all countries should share the same time index.
+        - Electricity load is sourced from self.load[(country, year)].
+        - Heat load is sourced from self.load_heat[(country, year)], only
+          added when 'include_heat' is set in config.
+        """
         for country in self.config["countries"]:
             demand = self.load[(country, year)]
             self.network.set_snapshots(demand.index)
@@ -85,6 +155,25 @@ class NetworkBuilder:
                 )
 
     def _add_dispatchable_generators(self):
+        """
+    Add dispatchable generators to the network for each country and technology.
+
+    Iterates over all configured countries and dispatchable technologies, adding
+    capacity-extendable components with costs and efficiencies sourced from
+    technology data. Capital cost includes fixed O&M (FOM) as a fraction of
+    investment. Marginal cost uses VOM if available, otherwise zero.
+
+    Technology-specific component types and bus configurations:
+
+    - biomass CHP: 'Link' drawing from biomass bus, outputting to electricity
+      and heat buses with separate electrical and heat efficiencies.
+    - CCGT: 'Link' drawing from CH4 bus, outputting to electricity and heat buses.
+    - gas boiler steam: 'Link' drawing from CH4 bus, outputting to heat bus only.
+    - industrial heat pump (high temperature): 'Link' drawing from electricity bus,
+      outputting to heat bus.
+    - OCGT: 'Link' drawing from CH4 bus, outputting to electricity bus only.
+    - all others: standard 'Generator' connected to the country electricity bus.
+        """
         for country in self.config["countries"]:
             for tech in self.config["technologies_disp"]:
 
@@ -131,7 +220,26 @@ class NetworkBuilder:
                         bus=f"bus_{country}",
                         carrier=tech)
                     
-    def _add_volatile_generators(self, year):
+    def _add_volatile_generators(self, year:int):
+        """
+    Add volatile (weather-dependent) generators to the network for a given year.
+
+    Iterates over all configured countries and volatile technologies (e.g. wind,
+    solar), adding a capacity-extendable 'Generator' per combination. Capacity
+    factors are aligned to network snapshots (missing values filled with 0).
+
+    Args:
+        year (int): The simulation year, used to select the appropriate
+            capacity factor time series.
+
+    Notes:
+        - Capital cost: investment cost plus fixed O&M (FOM) as a fraction of
+          investment, in kW terms (not normalized to MW).
+        - Marginal cost: variable O&M (VOM) from technology data if available,
+          otherwise zero.
+        - p_max_pu: per-unit availability profile sourced from capacity factor data.
+        - Carrier: set to the technology name for emissions/attribute tracking.
+        """
         for country in self.config["countries"]:
             for tech in self.config["technologies_vol"]:
                 cf = self.cf[(country, year)]
@@ -147,7 +255,22 @@ class NetworkBuilder:
                     carrier=tech
                 )
 
-    def _add_storage(self):  # needs some common data for efficiency and standing losses
+    def _add_storage(self):
+        """
+    Add storage units to the network for each country and storage technology.
+
+    Iterates over all configured countries and storage technologies, adding a
+    'StorageUnit' component per combination. Each unit is capacity-extendable
+    with the following characteristics:
+
+    - Capital cost: derived from technology investment cost plus fixed O&M (FOM),
+      both normalized from kW to MW (divided by 1000).
+    - Marginal cost: small non-zero value (0.001) to discourage unnecessary dispatch.
+    - Marginal cost of storage: zero (no cost for charging).
+    - Charge/discharge efficiency: symmetric, sourced from technology data.
+    - Standing loss: zero (no self-discharge).
+    - Carrier: set to the technology name for emissions/attribute tracking.
+        """
         for country in self.config["countries"]:
             for tech in self.config["technologies_storage"]:
                 self.network.add(
@@ -165,6 +288,17 @@ class NetworkBuilder:
                 )
 
     def _add_transmission_lines(self):
+        """
+    Add transmission lines and optional methane pipelines to the network.
+
+    Adds AC transmission lines (as 'Line' components) between buses using
+    electrical parameters (reactance, nominal apparent power) defined in config.
+    Lines are fixed in capacity (not extendable).
+
+    If 'CH4_lines' are specified in the config, also adds methane transport
+    links (as 'Link' components) between CH4 buses. These omit reactance
+    (irrelevant for gas transport) and are capacity-extendable.
+        """
         for line in self.config["transmission_lines"]:
             self.network.add(
                 "Line",
@@ -187,6 +321,13 @@ class NetworkBuilder:
                 )
 
     def _add_global_co2_limit(self):
+        """
+    Add a global CO2 emissions constraint to the network.
+
+    Registers a GlobalConstraint named 'CO2Limit' that caps total CO2 emissions
+    across all carriers with a 'co2_emissions' attribute, using the limit defined
+    in the configuration.
+        """
         self.network.add(
             "GlobalConstraint",
             "CO2Limit",

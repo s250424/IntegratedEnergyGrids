@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 class InputHandler():
+    """"Handles the input data required for the pypsa optimization model."""
     def __init__(self, config:dict, year:int=2023):
         """
     Initialize the model with configuration and preload all required input data.
