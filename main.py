@@ -74,11 +74,16 @@ capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each tec
 for year in CONFIG_B["years"]:
     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
     networks[year] = network_b
-    for gen in network_b.network.generators.index: # CHANGE: loop through generators to get capacity per technology for each year
+    
+    # --- GENERATORS (solar, wind, coal, nuclear)
+    for gen in network_b.network.generators.index:
         cap = network_b.network.generators.loc[gen, "p_nom_opt"]
-        if gen not in capacity_by_tech:
-            capacity_by_tech[gen] = []
-        capacity_by_tech[gen].append(cap)
+        capacity_by_tech.setdefault(gen, []).append(cap)
+
+    # --- LINKS (CCGT, OCGT, CHP, etc)
+    for link in network_b.network.links.index:
+        cap = network_b.network.links.loc[link, "p_nom_opt"]
+        capacity_by_tech.setdefault(link, []).append(cap)
 
 print("\nCAPACITY_BY_TECH")
 for tech, vals in capacity_by_tech.items():
