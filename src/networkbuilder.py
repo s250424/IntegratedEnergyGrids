@@ -248,11 +248,12 @@ class NetworkBuilder:
         """
         for country in self.config["countries"]:
             for tech in self.config["technologies_vol"]:
-                cf = self.cf[(country, year)].copy()
-                cf = cf.iloc[:len(self.network.snapshots)].copy()
-                cf.index = self.network.snapshots
-                # cf = self.cf[(country, year)]
-                # cf = cf.reindex(self.network.snapshots).fillna(0.0) # fill missing values with 0
+                cf = self.cf[(country, year)]
+                if self.config.get("load_year") is not None: # for task b (as we're only using year 2023)
+                    cf = cf.iloc[:len(self.network.snapshots)].copy()
+                    cf.index = self.network.snapshots
+                else:
+                    cf = cf.reindex(self.network.snapshots).fillna(0.0) # fill missing values with 0
                 self.network.add(
                     "Generator",
                     bus=f"bus_{country}",
