@@ -58,16 +58,16 @@ CONFIG_I["include_heat"] = True
 CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
-# TASK A
-input_data_a = InputHandler(CONFIG_A)
-network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-visualizer_a.plot_annual_electricity_mix()
-visualizer_a.plot_installed_capacity()
-visualizer_a.plot_load_duration_curve()
+# # TASK A
+# input_data_a = InputHandler(CONFIG_A)
+# network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_a.plot_annual_electricity_mix()
+# visualizer_a.plot_installed_capacity()
+# visualizer_a.plot_load_duration_curve()
 
-export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0]) 
+# export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0]) 
 
 # # TASK B
 # input_data_b = InputHandler(CONFIG_B)
@@ -104,35 +104,35 @@ export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0])
 # visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
 # visualizer_cf.plot_capacity_factors(input_data_b)
 
-# TASK C
-input_data_c = InputHandler(CONFIG_C)
-network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
-visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
-visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-visualizer_c.plot_dispatch_diff_time_series(
-    other=visualizer_a,
-    start_summer=pd.Timestamp("2023-07-01"),
-    start_winter=pd.Timestamp("2023-12-01"),
-)
-visualizer_c.plot_annual_electricity_mix()
-visualizer_c.plot_storage_behavior(
-    start_summer=pd.Timestamp("2023-07-01"),
-    start_winter=pd.Timestamp("2023-12-01"),
-)
-visualizer_c.plot_installed_capacity()
+# # TASK C
+# input_data_c = InputHandler(CONFIG_C)
+# network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
+# visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
+# visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_c.plot_dispatch_diff_time_series(
+#     other=visualizer_a,
+#     start_summer=pd.Timestamp("2023-07-01"),
+#     start_winter=pd.Timestamp("2023-12-01"),
+# )
+# visualizer_c.plot_annual_electricity_mix()
+# visualizer_c.plot_storage_behavior(
+#     start_summer=pd.Timestamp("2023-07-01"),
+#     start_winter=pd.Timestamp("2023-12-01"),
+# )
+# visualizer_c.plot_installed_capacity()
 
-export_results_to_json(network_c.network, "task_c", CONFIG_C["years"][0])
+# export_results_to_json(network_c.network, "task_c", CONFIG_C["years"][0])
 
-# TASK D
-input_data_d = InputHandler(CONFIG_D)
-network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
-visualizer_d = Visualizer(network_d.network, scenario_name = 'd')
-visualizer_d.plot_annual_electricity_mix()
-visualizer_d.plot_installed_capacity()
-visualizer_d.plot_line_utilisation_bar()
-visualizer_d.plot_network_diagram()
+# # TASK D
+# input_data_d = InputHandler(CONFIG_D)
+# network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
+# visualizer_d = Visualizer(network_d.network, scenario_name = 'd')
+# visualizer_d.plot_annual_electricity_mix()
+# visualizer_d.plot_installed_capacity()
+# visualizer_d.plot_line_utilisation_bar()
+# visualizer_d.plot_network_diagram()
 
-export_results_to_json(network_d.network, "task_d", CONFIG_D["years"][0])
+# export_results_to_json(network_d.network, "task_d", CONFIG_D["years"][0])
 
 # # TASK F
 # input_data_f = InputHandler(CONFIG_F)
@@ -173,9 +173,15 @@ export_results_to_json(network_d.network, "task_d", CONFIG_D["years"][0])
 # input_data_h = InputHandler(CONFIG_H)
 # network_h = NetworkBuilder(CONFIG_H, input_data_h, CONFIG_H["years"][0])
 
-# # TASK i
-# input_data_i = InputHandler(CONFIG_I)
-# network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
+# # CO2 shadow price
+# co2_shadow_price = abs(network_h.network.global_constraints.loc["CO2Limit", "mu"])
+# print(f"CO2 shadow price for task H: {co2_shadow_price:.2f} €/tCO2")
+
+# TASK i
+input_data_i = InputHandler(CONFIG_I)
+network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
+
+export_results_to_json(network_i.network, "task_i", CONFIG_I["years"][0])
 
 # # TASK J
 # input_data_j = InputHandler(CONFIG_J)

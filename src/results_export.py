@@ -41,6 +41,11 @@ def export_results_to_json(network, scenario_name, year, path=None):
         "transported_energy_TWh": {},
     }
 
+    if "CO2Limit" in network.global_constraints.index:
+        results["co2_shadow_price_EUR_per_tCO2"] = _clean(
+            abs(network.global_constraints.loc["CO2Limit", "mu"])
+        )
+
     # generators: coal, nuclear, solar, wind, etc.
     for gen in network.generators.index:
         country, tech = simplify_name(gen)
@@ -99,6 +104,22 @@ def export_results_to_json(network, scenario_name, year, path=None):
         results[key]["annual_dispatch_TWh"][tech] = _clean(dispatch_twh)
         results[key]["installed_capacity_GW"][tech] = _clean(capacity_gw)
 
+    # heat demand (opcional)
+    if "heat" in [carrier for carrier in network.carriers.index]:
+        for load in network.loads.index:
+            if "_heat" in load:
+                country = load.split("_")[1]
+                key = f"{year}_{country}"
+
+                if key not in results:
+                    results[key] = {
+                        "annual_dispatch_TWh": {},
+                        "installed_capacity_GW": {},
+                    }
+
+                heat_demand = network.loads_t.p_set[load].sum() / 1e6
+                results[key]["annual_dispatch_TWh"]["heat_demand"] = _clean(heat_demand)
+
     # electricity transport
     if not network.lines.empty:
         results["transported_energy_TWh"]["electricity"] = _clean(
@@ -120,17 +141,21 @@ def export_results_to_json(network, scenario_name, year, path=None):
         existing_results = {
             "objective_value": {},
             "transported_energy_TWh": {},
+            "co2_shadow_price_EUR_per_tCO2": {},
         }
 
     # Save objective by year
     existing_results["objective_value"][year] = results["objective_value"]
+
+    if "co2_shadow_price_EUR_per_tCO2" in results:
+        existing_results["co2_shadow_price_EUR_per_tCO2"][year] = results["co2_shadow_price_EUR_per_tCO2"]
 
     # Save transported energy by year
     existing_results["transported_energy_TWh"][year] = results["transported_energy_TWh"]
 
     # Save country-year blocks, e.g. 2020_BE, 2021_BE
     for key, value in results.items():
-        if key not in ["objective_value", "transported_energy_TWh"]:
+        if key not in ["objective_value","transported_energy_TWh","co2_shadow_price_EUR_per_tCO2",]:
             existing_results[key] = value
 
     with open(path, "w") as f:
