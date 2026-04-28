@@ -55,7 +55,8 @@ class NetworkBuilder:
         
         # ADD COMPONENTS TO PYPSA NETWORK
         self._add_buses_carrier_stocks()
-        self._add_loads()
+        load_year = self.config.get("load_year", year)
+        self._add_loads(load_year)
         self._add_dispatchable_generators()
         self._add_volatile_generators(year)
         if len(self.config["countries"]) > 1:
@@ -151,7 +152,7 @@ class NetworkBuilder:
                 p_set=demand["Actual Load"],
             )
             if self.config.get("include_heat"):
-                heating_demand = self.load_heat[(country, year)]
+                heating_demand = self.load_heat[(country, 2023)]
                 self.network.add(
                     "Load",
                     name=f"load_{country}_heat",
@@ -247,8 +248,11 @@ class NetworkBuilder:
         """
         for country in self.config["countries"]:
             for tech in self.config["technologies_vol"]:
-                cf = self.cf[(country, year)]
-                cf = cf.reindex(self.network.snapshots).fillna(0.0) # fill missing values with 0
+                cf = self.cf[(country, year)].copy()
+                cf = cf.iloc[:len(self.network.snapshots)].copy()
+                cf.index = self.network.snapshots
+                # cf = self.cf[(country, year)]
+                # cf = cf.reindex(self.network.snapshots).fillna(0.0) # fill missing values with 0
                 self.network.add(
                     "Generator",
                     bus=f"bus_{country}",
