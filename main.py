@@ -8,6 +8,7 @@ import numpy as np
 from src.input import InputHandler
 from src.networkbuilder import NetworkBuilder
 from src.visualizer import Visualizer
+from src.results_export import export_results_to_json
 
 """>>>> SPECIFY CONFIGURATION-DICTIONARIES FOR EACH TASK <<<<"""
 CONFIG_A = {
@@ -57,14 +58,16 @@ CONFIG_I["include_heat"] = True
 CONFIG_J = copy.deepcopy(CONFIG_I)
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
-# # TASK A
-# input_data_a = InputHandler(CONFIG_A)
-# network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_a.plot_annual_electricity_mix()
-# visualizer_a.plot_installed_capacity()
-# visualizer_a.plot_load_duration_curve()
+# TASK A
+input_data_a = InputHandler(CONFIG_A)
+network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_a.plot_annual_electricity_mix()
+visualizer_a.plot_installed_capacity()
+visualizer_a.plot_load_duration_curve()
+
+export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0]) 
 
 # # TASK B
 # input_data_b = InputHandler(CONFIG_B)
@@ -74,6 +77,12 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 # for year in CONFIG_B["years"]:
 #     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
 #     networks[year] = network_b
+
+#     export_results_to_json(
+#         network_b.network,
+#         "task_b",
+#         year
+#     )
 
 #     # --- GENERATORS (solar, wind, coal, nuclear)
 #     for gen in network_b.network.generators.index:
@@ -95,22 +104,24 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 # visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
 # visualizer_cf.plot_capacity_factors(input_data_b)
 
-# # TASK C
-# input_data_c = InputHandler(CONFIG_C)
-# network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
-# visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
-# visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_c.plot_dispatch_diff_time_series(
-#     other=visualizer_a,
-#     start_summer=pd.Timestamp("2023-07-01"),
-#     start_winter=pd.Timestamp("2023-12-01"),
-# )
-# visualizer_c.plot_annual_electricity_mix()
-# visualizer_c.plot_storage_behavior(
-#     start_summer=pd.Timestamp("2023-07-01"),
-#     start_winter=pd.Timestamp("2023-12-01"),
-# )
-# visualizer_c.plot_installed_capacity()
+# TASK C
+input_data_c = InputHandler(CONFIG_C)
+network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
+visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
+visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+visualizer_c.plot_dispatch_diff_time_series(
+    other=visualizer_a,
+    start_summer=pd.Timestamp("2023-07-01"),
+    start_winter=pd.Timestamp("2023-12-01"),
+)
+visualizer_c.plot_annual_electricity_mix()
+visualizer_c.plot_storage_behavior(
+    start_summer=pd.Timestamp("2023-07-01"),
+    start_winter=pd.Timestamp("2023-12-01"),
+)
+visualizer_c.plot_installed_capacity()
+
+export_results_to_json(network_c.network, "task_c", CONFIG_C["years"][0])
 
 # TASK D
 input_data_d = InputHandler(CONFIG_D)
@@ -121,6 +132,7 @@ visualizer_d.plot_installed_capacity()
 visualizer_d.plot_line_utilisation_bar()
 visualizer_d.plot_network_diagram()
 
+export_results_to_json(network_d.network, "task_d", CONFIG_D["years"][0])
 
 # # TASK F
 # input_data_f = InputHandler(CONFIG_F)
