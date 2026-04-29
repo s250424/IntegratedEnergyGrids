@@ -1,4 +1,6 @@
 import copy
+import json
+import os
 
 import pandas as pd
 import matplotlib
@@ -158,6 +160,20 @@ for percent in np.arange(0.5, 0.0, -0.1):
     else:
         print("CO2Limit NOT FOUND in model constraints")
 
+results_f = {}
+
+for percent, net in networks_f.items():
+    n = net.network
+
+    results_f[percent] = {
+        "objective": n.objective,
+        "co2_shadow_price": abs(n.model.constraints["CO2Limit"].dual.item())
+    }
+
+os.makedirs("results/numerical_results", exist_ok=True)
+with open("results_task_f.json", "w") as f:
+    json.dump(results_f, f, indent=4)
+
 # grouped bar chart: C vs F at 100%
 visualizer_c = Visualizer(network_c.network, scenario_name="c")
 visualizer_f = Visualizer(networks_f[max(networks_f.keys())].network, scenario_name="f")
@@ -174,30 +190,36 @@ visualizer_f.plot_co2_sensitivity(
     name="co2_sensitivity",
 )
 
-# # TASK G
-# input_data_g = InputHandler(CONFIG_G)
-# network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
+# TASK G
+input_data_g = InputHandler(CONFIG_G)
+network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
 
-# visualizer_g = Visualizer(network_g.network, scenario_name="g")
-# energy_transport_table = visualizer_g.plot_energy_transport_comparison()
-# print(energy_transport_table)
+visualizer_g = Visualizer(network_g.network, scenario_name="g")
+energy_transport_table = visualizer_g.plot_energy_transport_comparison()
+print(energy_transport_table)
 
-# # TASK H
-# input_data_h = InputHandler(CONFIG_H)
-# network_h = NetworkBuilder(CONFIG_H, input_data_h, CONFIG_H["years"][0])
+export_results_to_json(network_g.network, "task_g", CONFIG_G["years"][0])
 
-# # CO2 shadow price
-# co2_shadow_price = abs(network_h.network.global_constraints.loc["CO2Limit", "mu"])
-# print(f"CO2 shadow price for task H: {co2_shadow_price:.2f} €/tCO2")
+# TASK H
+input_data_h = InputHandler(CONFIG_H)
+network_h = NetworkBuilder(CONFIG_H, input_data_h, CONFIG_H["years"][0])
 
-# # TASK i
-# input_data_i = InputHandler(CONFIG_I)
-# network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
+# CO2 shadow price
+co2_shadow_price = abs(network_h.network.model.constraints["CO2Limit"].dual.item())
+print(f"CO2 shadow price for task H: {co2_shadow_price:.2f} €/tCO2")
 
-# export_results_to_json(network_i.network, "task_i", CONFIG_I["years"][0])
+export_results_to_json(network_h.network, "task_h", CONFIG_H["years"][0])
 
-# # TASK J
-# input_data_j = InputHandler(CONFIG_J)
-# network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0]))
+# TASK i
+input_data_i = InputHandler(CONFIG_I)
+network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
+
+export_results_to_json(network_i.network, "task_i", CONFIG_I["years"][0])
+
+# TASK J
+input_data_j = InputHandler(CONFIG_J)
+network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0])
+
+export_results_to_json(network_j.network, "task_j", CONFIG_J["years"][0])
 
 print('all network optimizations were successful')
