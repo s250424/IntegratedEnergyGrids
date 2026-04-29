@@ -111,11 +111,11 @@ input_data_c = InputHandler(CONFIG_C)
 network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
 visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
 visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-# visualizer_c.plot_dispatch_diff_time_series(
-#     other=visualizer_a,
-#     start_summer=pd.Timestamp("2023-07-01"),
-#     start_winter=pd.Timestamp("2023-12-01"),
-# )
+visualizer_c.plot_dispatch_diff_time_series(
+    other=visualizer_a,
+    start_summer=pd.Timestamp("2023-07-01"),
+    start_winter=pd.Timestamp("2023-12-01"),
+)
 visualizer_c.plot_annual_electricity_mix()
 visualizer_c.plot_storage_behavior(
     start_summer=pd.Timestamp("2023-07-01"),
@@ -191,12 +191,10 @@ visualizer_f.plot_co2_sensitivity(
 )
 
 # # TASK G
-# input_data_g = InputHandler(CONFIG_G)
-# network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
-# visualizer_g = Visualizer(network_g.network, scenario_name="g")
-# visualizer_g.plot_dual_network_diagram()
-
+input_data_g = InputHandler(CONFIG_G)
+network_g = NetworkBuilder(CONFIG_G, input_data_g, CONFIG_G["years"][0])
 visualizer_g = Visualizer(network_g.network, scenario_name="g")
+visualizer_g.plot_dual_network_diagram()
 energy_transport_table = visualizer_g.plot_energy_transport_comparison()
 print(energy_transport_table)
 
