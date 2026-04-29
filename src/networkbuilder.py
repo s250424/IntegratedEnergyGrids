@@ -197,6 +197,7 @@ class NetworkBuilder:
                         bus0=f"bus_{country}_biomass", 
                         bus1=f"bus_{country}",
                         bus2=f"bus_{country}_heat",
+                        carrier = 'biomass',
                         efficiency2=self.tech_data.loc[(tech, "efficiency-heat"), "value"])
                 elif tech == "CCGT":
                     self.network.add(
@@ -204,12 +205,14 @@ class NetworkBuilder:
                         bus0=f"bus_{country}_ch4", 
                         bus1=f"bus_{country}",
                         bus2=f"bus_{country}_heat",
+                        carrier = 'ch4',
                         efficiency2=self.tech_data.loc[(tech, "efficiency"), "value"])     # TODO add heat efficiency                
                 elif tech == "gas boiler steam":
                     self.network.add(
                         "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
                         bus0=f"bus_{country}_ch4", 
-                        bus1=f"bus_{country}_heat")
+                        bus1=f"bus_{country}_heat",
+                        carrier = 'ch4')
                 elif tech == "industrial heat pump high temperature":
                     self.network.add(
                         "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
@@ -219,7 +222,8 @@ class NetworkBuilder:
                     self.network.add(
                         "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
                         bus0=f"bus_{country}_ch4",
-                        bus1=f"bus_{country}")
+                        bus1=f"bus_{country}",
+                        carrier = 'ch4')
                 else:
                     self.network.add(
                         "Generator", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
