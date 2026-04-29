@@ -351,7 +351,6 @@ class NetworkBuilder:
         
     def _add_custom_co2_constraint(self, n, snapshots):
         m = n.model
-        weights = n.snapshot_weightings.generators.loc[snapshots]
 
         co2_terms = []
 
@@ -360,13 +359,13 @@ class NetworkBuilder:
             gen_p = m.variables["Generator-p"]
             gen_co2 = n.generators.carrier.map(n.carriers.co2_emissions).fillna(0.0)
             gen_eff = n.generators.efficiency.replace(0, 1.0)
-            co2_terms.append((gen_p * (gen_co2 / gen_eff) * weights).sum())
+            co2_terms.append((gen_p * (gen_co2 / gen_eff)).sum())
 
         # Links: OCGT, CCGT, gas boiler, biomass CHP
         if len(n.links) > 0:
             link_p = m.variables["Link-p"]
             link_co2 = n.links.carrier.map(n.carriers.co2_emissions).fillna(0.0)
-            co2_terms.append((link_p * link_co2 * weights).sum())
+            co2_terms.append((link_p * link_co2).sum())
 
         total_co2 = sum(co2_terms)
 
