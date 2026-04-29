@@ -1110,7 +1110,7 @@ class Visualizer:
 
         # fall back to circle layout for any country not in the map
         buses = [b.replace("bus_", "") for b in self.network.buses.index
-                if "heat" not in b and "ch4" not in b]
+                if "heat" not in b and "ch4" not in b and "biomass" not in b]
         for i, bus in enumerate(buses):
             if bus not in COUNTRY_POS:
                 angle = 2 * np.pi * i / len(buses)
@@ -1166,6 +1166,126 @@ class Visualizer:
         ax.set_aspect("equal")
         ax.axis("off")
         ax.set_title("Transmission line utilisation", fontsize=13, pad=12)
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+    def plot_dual_network_diagram(
+        self,
+        name: str = "dual_network_diagram",
+    ) -> None:
+        """
+        Side-by-side schematic diagrams of the electricity and CH4 gas networks.
+        Electricity edges are coloured by average utilisation. CH4 edges are drawn
+        in neutral grey since capacity is optimised and utilisation is not meaningful.
+        Total transported energy (TWh) is annotated in each panel title.
+        """
+        import matplotlib.cm as mcm
+        import matplotlib.colors as mcolors
+
+        COUNTRY_POS = {
+            "BE":    (4.5,  50.8),
+            "FR":    (3.7,  49.3),
+            "NL":    (5.3,  52.3),
+            "DE_LU": (10.0, 51.2),
+        }
+
+        buses = [b.replace("bus_", "") for b in self.network.buses.index
+                if "heat" not in b and "ch4" not in b and "biomass" not in b]
+        for i, bus in enumerate(buses):
+            if bus not in COUNTRY_POS:
+                angle = 2 * np.pi * i / len(buses)
+                COUNTRY_POS[bus] = (5 + 3 * np.cos(angle), 50 + 3 * np.sin(angle))
+
+        cmap = mcm.RdYlGn_r
+        norm = mcolors.Normalize(vmin=80, vmax=100)
+        sm   = mcm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+
+        transport = self.get_energy_transport_table()
+        elec_twh = transport.loc[transport["Network"] == "Electricity", "Transported energy [TWh]"].values[0]
+        gas_twh  = transport.loc[transport["Network"] == "CH4 gas",     "Transported energy [TWh]"].values[0]
+
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+        def draw_nodes(ax):
+            for bus in buses:
+                if bus not in COUNTRY_POS:
+                    continue
+                x, y = COUNTRY_POS[bus]
+                ax.scatter(x, y, s=600, color="#2c3e50", zorder=4)
+                ax.text(x, y, bus, ha="center", va="center",
+                        fontsize=9, fontweight="bold", color="white", zorder=5)
+
+        # ── LEFT PANEL: electricity ──────────────────────────────────────────────
+        ax_elec = axes[0]
+        elec_lines = self.network.lines
+        elec_flows = self.network.lines_t.p0
+
+        if not elec_lines.empty:
+            avg_flow_elec = elec_flows.abs().mean().fillna(0)
+            avg_util_elec = (avg_flow_elec / elec_lines["s_nom"] * 100).fillna(0)
+
+            for line_name, row in elec_lines.iterrows():
+                bus0 = row["bus0"].replace("bus_", "")
+                bus1 = row["bus1"].replace("bus_", "")
+                if bus0 not in COUNTRY_POS or bus1 not in COUNTRY_POS:
+                    continue
+                x0, y0 = COUNTRY_POS[bus0]
+                x1, y1 = COUNTRY_POS[bus1]
+                util  = avg_util_elec.get(line_name, 0)
+                color = cmap(norm(util))
+                ax_elec.plot([x0, x1], [y0, y1], color=color, linewidth=3,
+                            solid_capstyle="round", zorder=1)
+                mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+                ax_elec.text(mx, my,
+                            f"{avg_flow_elec.get(line_name, 0):,.0f} MW",
+                            ha="center", va="center", fontsize=8, fontweight="bold",
+                            bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8),
+                            zorder=3)
+
+        draw_nodes(ax_elec)
+        ax_elec.set_title(f"Electricity network\nTotal transported: {elec_twh:.2f} TWh",
+                        fontsize=12)
+        ax_elec.set_aspect("equal")
+        ax_elec.axis("off")
+
+        cbar = fig.colorbar(sm, ax=ax_elec, orientation="vertical", fraction=0.02, pad=0.02)
+        cbar.set_label("Average utilisation (%)", fontsize=10)
+
+        # ── RIGHT PANEL: CH4 gas ─────────────────────────────────────────────────
+        ax_gas = axes[1]
+        ch4_links = [l for l in self.network.links.index if l.startswith("CH4_")]
+
+        if ch4_links:
+            avg_flow_gas = self.network.links_t.p0[ch4_links].abs().mean().fillna(0)
+
+            for link_name in ch4_links:
+                row  = self.network.links.loc[link_name]
+                bus0 = row["bus0"].replace("bus_", "").replace("_ch4", "")
+                bus1 = row["bus1"].replace("bus_", "").replace("_ch4", "")
+                if bus0 not in COUNTRY_POS or bus1 not in COUNTRY_POS:
+                    continue
+                x0, y0 = COUNTRY_POS[bus0]
+                x1, y1 = COUNTRY_POS[bus1]
+                ax_gas.plot([x0, x1], [y0, y1], color="#555555", linewidth=3,
+                            solid_capstyle="round", zorder=1)
+                mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+                ax_gas.text(mx, my,
+                            f"{avg_flow_gas.get(link_name, 0):,.0f} MW",
+                            ha="center", va="center", fontsize=8, fontweight="bold",
+                            bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8),
+                            zorder=3)
+        else:
+            ax_gas.text(0.5, 0.5, "No CH4 links in network",
+                        ha="center", va="center", transform=ax_gas.transAxes, fontsize=11)
+
+        draw_nodes(ax_gas)
+        ax_gas.set_title(f"CH4 gas network\nTotal transported: {gas_twh:.2f} TWh",
+                        fontsize=12)
+        ax_gas.set_aspect("equal")
+        ax_gas.axis("off")
 
         fig.tight_layout()
         plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
