@@ -65,6 +65,21 @@ class Visualizer:
             "coal":           "#3D3D3D",
         }
 
+        self.DISPLAY_NAMES = {
+            "CCGT":                                    "CCGT",
+            "OCGT":                                    "OCGT",
+            "nuclear":                                 "Nuclear",
+            "coal":                                    "Coal",
+            "biomass CHP":                             "Biomass CHP",
+            "gas boiler steam":                        "Gas Boiler Steam",
+            "industrial heat pump high temperature":   "Heat Pump (HT)",
+            "offwind":                                 "Offshore Wind",
+            "onwind":                                  "Onshore Wind",
+            "solar":                                   "Solar",
+            "Pumped-Storage-Hydro-bicharger":          "Pumped Hydro",
+            "Lithium-Ion-LFP-bicharger":               "Li-Ion (LFP)",
+        }
+
     def _make_path(self, default_name: str) -> str:
         if self.scenario_name:
             prefix = self.scenario_name + "_"
@@ -95,7 +110,8 @@ class Visualizer:
             normalized = key
             tech_parts = parts
 
-        return self.LABEL_MAP.get(normalized, "_".join(tech_parts))
+        raw = self.LABEL_MAP.get(normalized, "_".join(tech_parts))
+        return self.DISPLAY_NAMES.get(raw, raw)
 
 
     def plot_dispatch_time_series(
@@ -155,6 +171,9 @@ class Visualizer:
         # plot the dispatch series
         for idx, season_dict in enumerate([summer_dict, winter_dict]):
             for (label, series), color in zip(season_dict.items(), colors):
+                if series.sum() <= 0:
+                    continue
+
                 axes[idx].plot(
                     series.index,
                     series.values / 1000,  # Convert MWh to GWh
@@ -544,14 +563,13 @@ class Visualizer:
 
         Saves the figure to 'results/sensitivity_capacity_to_weather_years.png'.
         """
-        labels = [self._get_label(key) for key in self.capacity_dict.keys()]
-
+        labels = []
         data = []
-        for v in self.capacity_dict.values():
-            if all(val == 0 for val in v):
-                data.append([np.nan] * len(v))  # 👈 clave
-            else:
-                data.append(v)
+        for key, vals in self.capacity_dict.items():
+            if all(v == 0 for v in vals):
+                continue
+            labels.append(self._get_label(key))
+            data.append(vals)
 
         fig, ax = plt.subplots(figsize=(9, 5))
 
@@ -710,6 +728,8 @@ class Visualizer:
 
             for key, color in zip(all_keys, colors):
                 diff = compute_diff(key, start, end)
+                if diff.abs().sum() <= 0:
+                    continue
                 ax.plot(
                     diff.index,
                     diff.values / 1000,          # MWh → GWh
@@ -884,6 +904,9 @@ class Visualizer:
         values_self  = [get_twh(self, k)  for k in unique_keys]
         values_other = [get_twh(other, k) for k in unique_keys]
 
+        filtered = [(l, k, vs, vo) for l, k, vs, vo in zip(unique_labels, unique_keys, values_self, values_other) if vs > 0 or vo > 0]
+        unique_labels, unique_keys, values_self, values_other = map(list, zip(*filtered)) if filtered else ([], [], [], [])
+
         x      = np.arange(len(unique_labels))
         width  = 0.35
         colors = [self.TECH_COLORS.get(l, cm.tab10(i / len(unique_labels)))
@@ -941,15 +964,21 @@ class Visualizer:
         Stacked area chart showing dispatch (TWh) per technology as a function
         of the CO2 constraint expressed as % of the 1990 reference level.
         """
-        # collect all technology labels across all solved networks
-        all_keys = sorted({
-            k
-            for nf in networks_f.values()
-            for k in nf.network.generators.index
-        })
-        all_labels = [self._get_label(k) for k in all_keys]
+        all_keys = []
+        for percent, nf in networks_f.items():
+            n = nf.network
+            for gen in n.generators.index:
+                if n.generators_t.p[gen].sum() > 0 and gen not in all_keys:
+                    all_keys.append(gen)
+            for link in n.links.index:
+                bus1 = n.links.loc[link, "bus1"]
+                bus1_name = bus1.replace("bus_", "")
+                if "_" not in bus1_name and link in n.links_t.p1.columns:
+                    if (-n.links_t.p1[link]).sum() > 0 and link not in all_keys:
+                        all_keys.append(link)
+        all_keys = sorted(all_keys)
 
-        # deduplicate
+        all_labels = [self._get_label(k) for k in all_keys]
         seen = {}
         for key, label in zip(all_keys, all_labels):
             if label not in seen:
@@ -957,17 +986,21 @@ class Visualizer:
         unique_labels = list(seen.keys())
         unique_keys   = list(seen.values())
 
-        # x-axis: CO2 % levels, sorted ascending
         percents = sorted(networks_f.keys())
-        x_vals   = [p * 100 for p in percents]   # 0 → 100
+        x_vals   = [p * 100 for p in percents]
 
-        # dispatch matrix: shape (n_techs, n_co2_levels)
         dispatch = np.zeros((len(unique_keys), len(percents)))
         for j, percent in enumerate(percents):
             nf = networks_f[percent]
+            n  = nf.network
             for i, key in enumerate(unique_keys):
-                if key in nf.network.generators_t.p.columns:
-                    dispatch[i, j] = nf.network.generators_t.p[key].sum() / 1e6
+                if key in n.generators_t.p.columns:
+                    dispatch[i, j] = n.generators_t.p[key].sum() / 1e6
+                elif key in n.links.index:
+                    bus1 = n.links.loc[key, "bus1"]
+                    bus1_name = bus1.replace("bus_", "")
+                    if "_" not in bus1_name and key in n.links_t.p1.columns:
+                        dispatch[i, j] = (-n.links_t.p1[key]).sum() / 1e6
 
         colors = [
             self.TECH_COLORS.get(l, cm.tab10(i / len(unique_labels)))
