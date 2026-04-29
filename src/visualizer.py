@@ -147,14 +147,15 @@ class Visualizer:
         end_summer = start_summer + pd.Timedelta(days=7)
         end_winter = start_winter + pd.Timedelta(days=7)
 
-        # filter dispatch series based on the desired week
+        active_keys = [k for k, s in self.dispatch_series_dict.items() if s.sum() > 0]
+
         summer_dict = {
-            label: series.loc[start_summer:end_summer]
-            for label, series in self.dispatch_series_dict.items()
+            label: self.dispatch_series_dict[label].loc[start_summer:end_summer]
+            for label in active_keys
         }
         winter_dict = {
-            label: series.loc[start_winter:end_winter]
-            for label, series in self.dispatch_series_dict.items()
+            label: self.dispatch_series_dict[label].loc[start_winter:end_winter]
+            for label in active_keys
         }
 
         # create axes so that summer dispatch and winter dispatch are plotted next to each other
@@ -173,9 +174,6 @@ class Visualizer:
         # plot the dispatch series
         for idx, season_dict in enumerate([summer_dict, winter_dict]):
             for (label, series), color in zip(season_dict.items(), colors):
-                if series.sum() <= 0:
-                    continue
-
                 axes[idx].plot(
                     series.index,
                     series.values / 1000,  # Convert MWh to GWh
@@ -689,7 +687,9 @@ class Visualizer:
 
         # union of all technology keys across both scenarios
         all_keys = sorted(
-            set(self.dispatch_series_dict.keys()) | set(other.dispatch_series_dict.keys())
+            k for k in set(self.dispatch_series_dict.keys()) | set(other.dispatch_series_dict.keys())
+            if (self.dispatch_series_dict.get(k, pd.Series(0)).sum() > 0 or
+                other.dispatch_series_dict.get(k, pd.Series(0)).sum() > 0)
         )
         colors = [cm.tab10(i / len(all_keys)) for i in range(len(all_keys))]
 
@@ -730,8 +730,6 @@ class Visualizer:
 
             for key, color in zip(all_keys, colors):
                 diff = compute_diff(key, start, end)
-                if diff.abs().sum() <= 0:
-                    continue
                 ax.plot(
                     diff.index,
                     diff.values / 1000,          # MWh → GWh
