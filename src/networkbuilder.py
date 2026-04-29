@@ -31,7 +31,11 @@ class NetworkBuilder:
         
         # Build and optimize the network
         self._build_network(year)
-        self.network.optimize()
+
+        if "global_CO2_limit" in self.config:
+            self.network.optimize(extra_functionality=self._add_custom_co2_constraint)
+        else:
+            self.network.optimize()
 
     def _build_network(self, year:int):
         """
@@ -63,8 +67,6 @@ class NetworkBuilder:
             self._add_transmission_lines()
         if self.config.get("technologies_storage"):
             self._add_storage()
-        if self.config.get("global_CO2_limit"):
-            self._add_global_co2_limit()
 
     def _add_buses_carrier_stocks(self):
         """
@@ -347,3 +349,29 @@ class NetworkBuilder:
             carrier_attribute="co2_emissions",
             sense="<=",
             constant=self.config["global_CO2_limit"])
+        
+    def _add_custom_co2_constraint(self, n, snapshots):
+        m = n.model
+        weights = n.snapshot_weightings.generators.loc[snapshots]
+
+        co2_terms = []
+
+        # Generators: coal, nuclear, solar, wind
+        if len(n.generators) > 0:
+            gen_p = m.variables["Generator-p"]
+            gen_co2 = n.generators.carrier.map(n.carriers.co2_emissions).fillna(0.0)
+            gen_eff = n.generators.efficiency.replace(0, 1.0)
+            co2_terms.append((gen_p * (gen_co2 / gen_eff) * weights).sum())
+
+        # Links: OCGT, CCGT, gas boiler, biomass CHP
+        if len(n.links) > 0:
+            link_p = m.variables["Link-p"]
+            link_co2 = n.links.carrier.map(n.carriers.co2_emissions).fillna(0.0)
+            co2_terms.append((link_p * link_co2 * weights).sum())
+
+        total_co2 = sum(co2_terms)
+
+        m.add_constraints(
+            total_co2 <= self.config["global_CO2_limit"],
+            name="CO2Limit"
+        )
