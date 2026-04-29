@@ -54,15 +54,17 @@ class Visualizer:
         self.TECH_COLORS = {
             "CCGT":           "#e96f23",
             "OCGT":           "#a86326",
-            "nuclear":        "#9467bd",
-            "biomass CHP":    "#2ca02c",
-            "solar":          "#dbc12b",
-            "onwind":         "#74c0e0",
-            "offwind":        "#1f77b4",
-            "Pumped Storage": "#8c564b",
-            "Hydro":          "#17becf",
-            "oil":            "#d62728",
-            "coal":           "#3D3D3D",
+            "Nuclear":        "#9467bd",
+            "Biomass CHP":    "#2ca02c",
+            "Solar":          "#dbc12b",
+            "Onshore Wind":   "#74c0e0",
+            "Offshore Wind":  "#1f77b4",
+            "Pumped Hydro":   "#362e60",
+            "Oil":            "#d62728",
+            "Coal":           "#3D3D3D",
+            "Heat Pump (HT)": "#ff0e6a",
+            "Li-Ion (LFP)":   "#bcbd22",
+
         }
 
         self.DISPLAY_NAMES = {
