@@ -202,12 +202,12 @@ class NetworkBuilder:
                         efficiency2=self.tech_data.loc[(tech, "efficiency-heat"), "value"])
                 elif tech == "CCGT":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=0.51,
                         bus0=f"bus_{country}_ch4", 
                         bus1=f"bus_{country}",
                         bus2=f"bus_{country}_heat",
                         carrier = 'ch4',
-                        efficiency2=self.tech_data.loc[(tech, "efficiency"), "value"])     # TODO add heat efficiency                
+                        efficiency2=0.39)                
                 elif tech == "gas boiler steam":
                     self.network.add(
                         "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
