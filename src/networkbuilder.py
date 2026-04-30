@@ -238,7 +238,7 @@ class NetworkBuilder:
                         bus0=f"bus_{country}_coal",
                         bus1=f"bus_{country}",
                         carrier = 'coal')
-                elif tech == "OCGT":
+                elif tech == "nuclear":
                     self.network.add(
                         "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
                         bus0=f"bus_{country}_nuclear",
