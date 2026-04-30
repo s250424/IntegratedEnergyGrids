@@ -1192,7 +1192,7 @@ class Visualizer:
         }
 
         buses = [b.replace("bus_", "") for b in self.network.buses.index
-                if "heat" not in b and "ch4" not in b and "biomass" not in b]
+                if not any(carrier in b for carrier in ["heat", "ch4", "biomass", "coal", "nuclear"])]
         for i, bus in enumerate(buses):
             if bus not in COUNTRY_POS:
                 angle = 2 * np.pi * i / len(buses)

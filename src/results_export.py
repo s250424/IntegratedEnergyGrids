@@ -27,7 +27,7 @@ def simplify_name(name):
     return country, tech
 
 
-def export_results_to_json(network, scenario_name, year, path=None):
+def export_results_to_json(network, scenario_name, year, path=None, co2_shadow_price=None):
     if path is None:
         os.makedirs("results/numerical_results", exist_ok=True)
         path = f"results/numerical_results/{scenario_name}.json"
@@ -41,10 +41,8 @@ def export_results_to_json(network, scenario_name, year, path=None):
         "transported_energy_TWh": {},
     }
 
-    if "CO2Limit" in network.global_constraints.index:
-        results["co2_shadow_price_EUR_per_tCO2"] = _clean(
-            abs(network.global_constraints.loc["CO2Limit", "mu"])
-        )
+    if co2_shadow_price is not None:
+        results["co2_shadow_price_EUR_per_tCO2"] = _clean(co2_shadow_price)
 
     # generators: coal, nuclear, solar, wind, etc.
     for gen in network.generators.index:
