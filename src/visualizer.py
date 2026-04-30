@@ -1404,3 +1404,193 @@ class Visualizer:
         plt.close()
 
         return transport_df
+    
+    def plot_annual_final_energy_mix(self, name="annual_final_energy_mix") -> None:
+        country_totals = {}
+
+        # 1) Electricity supply: generators
+        for gen in self.network.generators.index:
+            total = self.network.generators_t.p[gen].sum()
+            if total <= 0:
+                continue
+
+            parts = gen.split("_")
+            try:
+                type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
+                country = parts[type_idx + 1]
+            except StopIteration:
+                country = "unknown"
+
+            label = self._get_label(gen) + " (el.)"
+            country_totals.setdefault(country, {})
+            country_totals[country][label] = country_totals[country].get(label, 0) + total
+
+        # 2) Electricity supply: links into electricity bus
+        for link in self.network.links.index:
+            bus1 = self.network.links.loc[link, "bus1"]
+            bus1_name = bus1.replace("bus_", "")
+
+            if "_" not in bus1_name and link in self.network.links_t.p1.columns:
+                total = (-self.network.links_t.p1[link]).clip(lower=0).sum()
+                if total <= 0:
+                    continue
+
+                parts = link.split("_")
+                try:
+                    type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
+                    country = parts[type_idx + 1]
+                except StopIteration:
+                    country = "unknown"
+
+                label = self._get_label(link) + " (el.)"
+                country_totals.setdefault(country, {})
+                country_totals[country][label] = country_totals[country].get(label, 0) + total
+
+        # 3) Heat supply: links into heat bus
+        for link in self.network.links.index:
+            bus1 = self.network.links.loc[link, "bus1"]
+
+            if bus1.endswith("_heat") and link in self.network.links_t.p1.columns:
+                total = (-self.network.links_t.p1[link]).clip(lower=0).sum()
+                if total <= 0:
+                    continue
+
+                country = bus1.replace("bus_", "").replace("_heat", "")
+                label = self._get_label(link) + " (heat)"
+
+                country_totals.setdefault(country, {})
+                country_totals[country][label] = country_totals[country].get(label, 0) + total
+
+        countries = list(country_totals.keys())
+
+        fig_height = max(3, len(countries) * 1.8 + 1.5)
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+
+        legend_handles = {}
+        bar_height = 0.5
+        bar_spacing = 1.0
+
+        all_labels = sorted({label for techs in country_totals.values() for label in techs})
+        label_to_color = {
+            label: self.TECH_COLORS.get(
+                label.replace(" (el.)", "").replace(" (heat)", ""),
+                cm.tab20(i / max(len(all_labels), 1))
+            )
+            for i, label in enumerate(all_labels)
+        }
+
+        for c_idx, country in enumerate(countries):
+            bar_y = c_idx * bar_spacing
+            totals = dict(sorted(country_totals[country].items(), key=lambda x: x[1], reverse=True))
+            total_supply = sum(totals.values())
+
+            left = 0.0
+            for label, value in totals.items():
+                pct = value / total_supply * 100
+                color = label_to_color[label]
+
+                bar = ax.barh(
+                    bar_y,
+                    pct,
+                    left=left,
+                    height=bar_height,
+                    color=color,
+                    edgecolor="white",
+                    linewidth=1.2,
+                )
+
+                if label not in legend_handles:
+                    legend_handles[label] = bar[0]
+
+                if pct >= 8:
+                    ax.text(
+                        left + pct / 2,
+                        bar_y,
+                        f"{label}\n{value/1e6:.2f} TWh",
+                        ha="center",
+                        va="center",
+                        fontsize=7,
+                        color="white",
+                        fontweight="bold",
+                    )
+
+                left += pct
+
+            ax.text(
+                101,
+                bar_y,
+                f"Total: {total_supply/1e6:.2f} TWh",
+                va="center",
+                ha="left",
+                fontsize=8.5,
+                fontstyle="italic",
+            )
+
+        ax.set_xlim(0, 100)
+        ax.set_yticks([i * bar_spacing for i in range(len(countries))])
+        ax.set_yticklabels(countries)
+        ax.set_xlabel("Share of final energy supply (%)")
+        ax.set_title("Annual final energy supply mix: electricity + heat")
+        ax.spines[["top", "right", "left"]].set_visible(False)
+
+        ax.legend(
+            handles=list(legend_handles.values()),
+            labels=list(legend_handles.keys()),
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.15),
+            ncol=3,
+            frameon=False,
+            fontsize=8,
+        )
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()
+
+
+    def plot_energy_demand_split(self, name="energy_demand_split") -> None:
+        data = {}
+
+        for load in self.network.loads.index:
+            total = self.network.loads_t.p_set[load].sum() / 1e6  # TWh
+            bus = self.network.loads.loc[load, "bus"]
+
+            if bus.endswith("_heat"):
+                country = bus.replace("bus_", "").replace("_heat", "")
+                sector = "Heating"
+            else:
+                country = bus.replace("bus_", "")
+                sector = "Electricity"
+
+            if country not in data:
+                data[country] = {"Electricity": 0.0, "Heating": 0.0}
+
+            data[country][sector] += total
+
+        countries = list(data.keys())
+        electricity = [data[c]["Electricity"] for c in countries]
+        heating = [data[c]["Heating"] for c in countries]
+
+        x = np.arange(len(countries))
+        width = 0.55
+
+        fig, ax = plt.subplots(figsize=(9, 5))
+
+        ax.bar(x, electricity, width, label="Electricity")
+        ax.bar(x, heating, width, bottom=electricity, label="Heating")
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(countries)
+        ax.set_ylabel("Annual demand [TWh]")
+        ax.set_title("Annual final energy demand split")
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+        ax.legend()
+
+        for i, c in enumerate(countries):
+            total = electricity[i] + heating[i]
+            ax.text(i, total, f"{total:.2f} TWh", ha="center", va="bottom", fontsize=9)
+
+        fig.tight_layout()
+        plt.savefig(self._make_path(name), dpi=150, bbox_inches="tight")
+        plt.close()

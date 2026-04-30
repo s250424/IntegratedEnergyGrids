@@ -216,36 +216,42 @@ input_data_i = InputHandler(CONFIG_I)
 network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
 
 visualizer_i = Visualizer(network_i.network, scenario_name="i")
-visualizer_i.plot_installed_capacity()
-visualizer_i.plot_annual_electricity_mix()
-visualizer_i.plot_energy_transport_comparison()
+# visualizer_i.plot_installed_capacity()
+# visualizer_i.plot_annual_electricity_mix()
+# visualizer_i.plot_energy_transport_comparison()
+visualizer_i = Visualizer(network_i.network, scenario_name="i")
+visualizer_i.plot_annual_final_energy_mix()
+visualizer_i.plot_energy_demand_split()
 
 export_results_to_json(network_i.network, "task_i", CONFIG_I["years"][0])
 
-# TASK J
-input_data_j = InputHandler(CONFIG_J)
-network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0])
+# # TASK J
+# input_data_j = InputHandler(CONFIG_J)
+# network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0])
 
-visualizer_j = Visualizer(network_j.network, scenario_name="j")
-visualizer_j.plot_installed_capacity()
-visualizer_j.plot_annual_electricity_mix()
-visualizer_j.plot_energy_transport_comparison()
+# visualizer_j = Visualizer(network_j.network, scenario_name="j")
+# # visualizer_j.plot_installed_capacity()
+# # visualizer_j.plot_annual_electricity_mix()
+# # visualizer_j.plot_energy_transport_comparison()
+# visualizer_j = Visualizer(network_j.network, scenario_name="j")
+# visualizer_j.plot_annual_final_energy_mix()
+# visualizer_j.plot_energy_demand_split()
 
-print("\n--- CH4 STORES ---")
-for store in network_j.network.stores.index:
-    if "ch4" in store:
-        print(
-            store,
-            "e_nom =", network_j.network.stores.loc[store, "e_nom"],
-            "e_initial =", network_j.network.stores.loc[store, "e_initial"]
-        )
+# print("\n--- CH4 STORES ---")
+# for store in network_j.network.stores.index:
+#     if "ch4" in store:
+#         print(
+#             store,
+#             "e_nom =", network_j.network.stores.loc[store, "e_nom"],
+#             "e_initial =", network_j.network.stores.loc[store, "e_initial"]
+#         )
 
-print("\n--- GAS TECHNOLOGY DISPATCH ---")
-for link in network_j.network.links.index:
-    if "CCGT" in link or "OCGT" in link or "gas boiler" in link:
-        dispatch = (-network_j.network.links_t.p1[link]).clip(lower=0).sum() / 1e6
-        print(link, "dispatch TWh =", dispatch)
+# print("\n--- GAS TECHNOLOGY DISPATCH ---")
+# for link in network_j.network.links.index:
+#     if "CCGT" in link or "OCGT" in link or "gas boiler" in link:
+#         dispatch = (-network_j.network.links_t.p1[link]).clip(lower=0).sum() / 1e6
+#         print(link, "dispatch TWh =", dispatch)
 
-export_results_to_json(network_j.network, "task_j", CONFIG_J["years"][0])
+# export_results_to_json(network_j.network, "task_j", CONFIG_J["years"][0])
 
 print('all network optimizations were successful')
