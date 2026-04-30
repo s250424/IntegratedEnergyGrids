@@ -1,42 +1,42 @@
 {
     "1.0": {
-        "objective": 822131723.2157228,
+        "objective": 39672403711.42399,
         "co2_shadow_price": 0.0
     },
     "0.9": {
-        "objective": 822131723.2157228,
+        "objective": 39672403711.423996,
         "co2_shadow_price": 0.0
     },
     "0.8": {
-        "objective": 822131723.2157228,
+        "objective": 39672403711.424,
         "co2_shadow_price": 0.0
     },
     "0.7": {
-        "objective": 825555057.7204458,
-        "co2_shadow_price": 0.8809028253957791
+        "objective": 39672403711.423996,
+        "co2_shadow_price": 0.0
     },
     "0.6": {
-        "objective": 840107495.7396629,
-        "co2_shadow_price": 1.860559555859215
+        "objective": 39672403711.424,
+        "co2_shadow_price": 0.0
     },
     "0.5": {
-        "objective": 864660009.9974915,
-        "co2_shadow_price": 2.586993715247882
+        "objective": 40094519268.01871,
+        "co2_shadow_price": 99.454326281541
     },
     "0.4": {
-        "objective": 892500523.453057,
-        "co2_shadow_price": 2.7705078636647507
+        "objective": 41897245382.311134,
+        "co2_shadow_price": 270.4078040102821
     },
     "0.3": {
-        "objective": 922602306.3137046,
-        "co2_shadow_price": 3.0526509372721584
+        "objective": 46358228119.59574,
+        "co2_shadow_price": 652.2281129900698
     },
     "0.2": {
-        "objective": 956843214.5435956,
-        "co2_shadow_price": 3.5933615142798168
+        "objective": 56826694900.970406,
+        "co2_shadow_price": 1518.5361986085359
     },
     "0.1": {
-        "objective": 999979630.0162416,
-        "co2_shadow_price": 4.95832687179421
+        "objective": 79265174298.42873,
+        "co2_shadow_price": 3075.9217571583367
     }
 }

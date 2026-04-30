@@ -72,43 +72,43 @@ CONFIG_J = copy.deepcopy(CONFIG_I)
 # export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0]) 
 
 # TASK B
-input_data_b = InputHandler(CONFIG_B)
-networks = {}
-capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
+# input_data_b = InputHandler(CONFIG_B)
+# networks = {}
+# capacity_by_tech = {} # CHANGE: added capacity per year for the plot of each technology
 
-for year in CONFIG_B["years"]:
-    network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
-    networks[year] = network_b
+# for year in CONFIG_B["years"]:
+#     network_b = NetworkBuilder(CONFIG_B, input_data_b, year)
+#     networks[year] = network_b
 
-    export_results_to_json(
-        network_b.network,
-        "task_b",
-        year
-    )
+#     export_results_to_json(
+#         network_b.network,
+#         "task_b",
+#         year
+#     )
 
-    # --- GENERATORS (solar, wind, coal, nuclear)
-    for gen in network_b.network.generators.index:
-        cap = network_b.network.generators.loc[gen, "p_nom_opt"]
-        capacity_by_tech.setdefault(gen, []).append(cap)
+#     # --- GENERATORS (solar, wind, coal, nuclear)
+#     for gen in network_b.network.generators.index:
+#         cap = network_b.network.generators.loc[gen, "p_nom_opt"]
+#         capacity_by_tech.setdefault(gen, []).append(cap)
 
-    # --- LINKS (CCGT, OCGT, CHP, etc)
-    for link in network_b.network.links.index:
-        cap = network_b.network.links.loc[link, "p_nom_opt"]
-        capacity_by_tech.setdefault(link, []).append(cap)
+#     # --- LINKS (CCGT, OCGT, CHP, etc)
+#     for link in network_b.network.links.index:
+#         cap = network_b.network.links.loc[link, "p_nom_opt"]
+#         capacity_by_tech.setdefault(link, []).append(cap)
 
-print("\nCAPACITY_BY_TECH")
-for tech, vals in capacity_by_tech.items():
-    print(tech, vals)
+# print("\nCAPACITY_BY_TECH")
+# for tech, vals in capacity_by_tech.items():
+#     print(tech, vals)
 
-visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_b.capacity_dict = capacity_by_tech
-visualizer_b.plot_sensitivity_capacity_to_weather_years()
-visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
-visualizer_cf.plot_capacity_factors(input_data_b)
+# visualizer_b = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_b.capacity_dict = capacity_by_tech
+# visualizer_b.plot_sensitivity_capacity_to_weather_years()
+# visualizer_cf = Visualizer(networks[CONFIG_B["years"][0]].network, scenario_name="b")
+# visualizer_cf.plot_capacity_factors(input_data_b)
 
-# TASK C
-# input_data_c = InputHandler(CONFIG_C)
-# network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
+## TASK C
+input_data_c = InputHandler(CONFIG_C)
+network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
 # visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
 # visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
 # visualizer_c.plot_dispatch_diff_time_series(
@@ -137,58 +137,58 @@ visualizer_cf.plot_capacity_factors(input_data_b)
 # export_results_to_json(network_d.network, "task_d", CONFIG_D["years"][0])
 
 # TASK F
-# input_data_f = InputHandler(CONFIG_F)
-# REF_CO2 = CONFIG_F["global_CO2_limit"]
+input_data_f = InputHandler(CONFIG_F)
+REF_CO2 = CONFIG_F["global_CO2_limit"]
 
-# networks_f = {}
-# for percent in np.arange(1, 0, -0.1):
-#     co2_limit = percent * REF_CO2
-#     CONFIG_F["global_CO2_limit"] = co2_limit
-#     network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
-#     networks_f[round(percent, 2)] = network_f
+networks_f = {}
+for percent in np.arange(1, 0, -0.1):
+    co2_limit = percent * REF_CO2
+    CONFIG_F["global_CO2_limit"] = co2_limit
+    network_f = NetworkBuilder(CONFIG_F, input_data_f, CONFIG_F["years"][0])
+    networks_f[round(percent, 2)] = network_f
 
-#     n = network_f.network
+    n = network_f.network
 
-#     print("\nCO2 TEST")
-#     print("percent:", round(percent, 2))
-#     print("cap:", co2_limit)
-#     print("objective:", n.objective)
+    print("\nCO2 TEST")
+    print("percent:", round(percent, 2))
+    print("cap:", co2_limit)
+    print("objective:", n.objective)
 
-#     if "CO2Limit" in n.model.constraints:
-#         dual = n.model.constraints["CO2Limit"].dual
-#         print("CO2 shadow price / mu:", dual)
-#     else:
-#         print("CO2Limit NOT FOUND in model constraints")
+    if "CO2Limit" in n.model.constraints:
+        dual = n.model.constraints["CO2Limit"].dual
+        print("CO2 shadow price / mu:", dual)
+    else:
+        print("CO2Limit NOT FOUND in model constraints")
 
-# results_f = {}
+results_f = {}
 
-# for percent, net in networks_f.items():
-#     n = net.network
+for percent, net in networks_f.items():
+    n = net.network
 
-#     results_f[percent] = {
-#         "objective": n.objective,
-#         "co2_shadow_price": abs(n.model.constraints["CO2Limit"].dual.item())
-#     }
+    results_f[percent] = {
+        "objective": n.objective,
+        "co2_shadow_price": abs(n.model.constraints["CO2Limit"].dual.item())
+    }
 
-# os.makedirs("results/numerical_results", exist_ok=True)
-# with open("results_task_f.json", "w") as f:
-#     json.dump(results_f, f, indent=4)
+os.makedirs("results/numerical_results", exist_ok=True)
+with open("results_task_f.json", "w") as f:
+    json.dump(results_f, f, indent=4)
 
-# # grouped bar chart: C vs F at 100%
-# visualizer_c = Visualizer(network_c.network, scenario_name="c")
-# visualizer_f = Visualizer(networks_f[max(networks_f.keys())].network, scenario_name="f")
-# visualizer_f.plot_scenario_comparison(
-#     other=visualizer_c,
-#     self_label="C (no CO₂ limit)",
-#     other_label="F (1990 CO₂ limit)",
-#     name="comparison_c_vs_f",
-# )
-# # sensitivity plot
-# visualizer_f.plot_co2_sensitivity(
-#     networks_f=networks_f,
-#     ref_co2=REF_CO2,
-#     name="co2_sensitivity",
-# )
+# grouped bar chart: C vs F at 100%
+visualizer_c = Visualizer(network_c.network, scenario_name="c")
+visualizer_f = Visualizer(networks_f[max(networks_f.keys())].network, scenario_name="f")
+visualizer_f.plot_scenario_comparison(
+    other=visualizer_c,
+    self_label="C (no CO₂ limit)",
+    other_label="F (1990 CO₂ limit)",
+    name="comparison_c_vs_f",
+)
+# sensitivity plot
+visualizer_f.plot_co2_sensitivity(
+    networks_f=networks_f,
+    ref_co2=REF_CO2,
+    name="co2_sensitivity",
+)
 
 # # TASK G
 # input_data_g = InputHandler(CONFIG_G)
