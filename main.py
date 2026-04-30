@@ -62,15 +62,15 @@ CONFIG_J["no_gas_supply"] = True # removes CH4 availability; gas-based technolog
 
 """>>>> SOLVE THE OPTIMIZATION PROBLEMS<<<<"""
 # TASK A
-input_data_a = InputHandler(CONFIG_A)
-network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
-visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
-visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
-visualizer_a.plot_annual_electricity_mix()
-visualizer_a.plot_installed_capacity()
-visualizer_a.plot_load_duration_curve()
+# input_data_a = InputHandler(CONFIG_A)
+# network_a = NetworkBuilder(CONFIG_A, input_data_a, CONFIG_A["years"][0])
+# visualizer_a = Visualizer(network_a.network, scenario_name = 'a')
+# visualizer_a.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
+# visualizer_a.plot_annual_electricity_mix()
+# visualizer_a.plot_installed_capacity()
+# visualizer_a.plot_load_duration_curve()
 
-export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0]) 
+# export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0]) 
 
 # TASK B
 # input_data_b = InputHandler(CONFIG_B)
@@ -108,8 +108,8 @@ export_results_to_json(network_a.network, "task_a", CONFIG_A["years"][0])
 # visualizer_cf.plot_capacity_factors(input_data_b)
 
 ## TASK C
-input_data_c = InputHandler(CONFIG_C)
-network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
+# input_data_c = InputHandler(CONFIG_C)
+# network_c = NetworkBuilder(CONFIG_C, input_data_c, CONFIG_C["years"][0])
 # visualizer_c = Visualizer(network_c.network, scenario_name = 'c')
 # visualizer_c.plot_dispatch_time_series(pd.Timestamp("2023-07-01"), pd.Timestamp("2023-12-01"))
 # visualizer_c.plot_dispatch_diff_time_series(
