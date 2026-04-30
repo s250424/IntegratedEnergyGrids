@@ -8,7 +8,9 @@
             "CH4": 902.5002
         }
     },
-    "co2_shadow_price_EUR_per_tCO2": {},
+    "co2_shadow_price_EUR_per_tCO2": {
+        "2023": 88.3316
+    },
     "2023_BE": {
         "annual_dispatch_TWh": {
             "offwind": 13.263,

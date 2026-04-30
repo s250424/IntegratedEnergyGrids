@@ -361,20 +361,20 @@ class NetworkBuilder:
                     p_nom_extendable=True,
                 )
 
-    def _add_global_co2_limit(self):
-        """
-    Add a global CO2 emissions constraint to the network.
+    # def _add_global_co2_limit(self):
+    #     """
+    # Add a global CO2 emissions constraint to the network.
 
-    Registers a GlobalConstraint named 'CO2Limit' that caps total CO2 emissions
-    across all carriers with a 'co2_emissions' attribute, using the limit defined
-    in the configuration.
-        """
-        self.network.add(
-            "GlobalConstraint",
-            "CO2Limit",
-            carrier_attribute="co2_emissions",
-            sense="<=",
-            constant=self.config["global_CO2_limit"])
+    # Registers a GlobalConstraint named 'CO2Limit' that caps total CO2 emissions
+    # across all carriers with a 'co2_emissions' attribute, using the limit defined
+    # in the configuration.
+    #     """
+    #     self.network.add(
+    #         "GlobalConstraint",
+    #         "CO2Limit",
+    #         carrier_attribute="co2_emissions",
+    #         sense="<=",
+    #         constant=self.config["global_CO2_limit"])
         
     def _add_custom_co2_constraint(self, n, snapshots):
         m = n.model
