@@ -1,67 +1,69 @@
 {
     "objective_value": {
-        "2023": 369442150178.4125
+        "2023": 442118896554.7859
     },
     "transported_energy_TWh": {
         "2023": {
-            "electricity": 213.8709
+            "electricity": 220.6509,
+            "CH4": 1268.2579
         }
     },
+    "co2_shadow_price_EUR_per_tCO2": {},
     "2023_BE": {
         "annual_dispatch_TWh": {
-            "offwind": 125.0406,
-            "onwind": 24.9433,
-            "solar": 66.4179,
+            "offwind": 34.8669,
+            "onwind": 57.1249,
+            "solar": 0.0,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
-            "coal": 0.0,
+            "coal": 232.6518,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
             "nuclear": 0.0,
-            "OCGT": 109.0826
+            "OCGT": 0.0
         },
         "installed_capacity_GW": {
-            "offwind": 37.0395,
-            "onwind": 14.4028,
-            "solar": 60.0565,
+            "offwind": 10.0565,
+            "onwind": 29.8396,
+            "solar": 0.0,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
-            "coal": 0.0,
+            "coal": 115.0965,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
             "nuclear": 0.0,
-            "OCGT": 95.0014
+            "OCGT": 0.0
         }
     },
     "2023_FR": {
         "annual_dispatch_TWh": {
             "offwind": 0.0,
-            "onwind": 291.3095,
-            "solar": 66.4035,
+            "onwind": 330.6811,
+            "solar": 11.5371,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
-            "coal": 0.0,
+            "coal": 145.3303,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
             "nuclear": 0.0,
-            "OCGT": 85.7929
+            "OCGT": 0.0
         },
         "installed_capacity_GW": {
             "offwind": 0.0,
-            "onwind": 163.6617,
-            "solar": 70.0654,
+            "onwind": 197.4039,
+            "solar": 10.5543,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
-            "coal": 0.0,
+            "coal": 151.1264,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
             "nuclear": 0.0,
-            "OCGT": 145.65
+            "OCGT": 0.0
         }
     },
     "2023_NL": {
         "annual_dispatch_TWh": {
-            "offwind": 209.4109,
+            "offwind": 215.185,
             "onwind": 0.0,
             "solar": 0.0,
             "biomass CHP": 0.0,
@@ -70,10 +72,10 @@
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
             "nuclear": 0.0,
-            "OCGT": 211.283
+            "OCGT": 173.0925
         },
         "installed_capacity_GW": {
-            "offwind": 86.3433,
+            "offwind": 89.7916,
             "onwind": 0.0,
             "solar": 0.0,
             "biomass CHP": 0.0,
@@ -82,33 +84,33 @@
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
             "nuclear": 0.0,
-            "OCGT": 169.8651
+            "OCGT": 180.604
         }
     },
     "2023_DE": {
         "annual_dispatch_TWh": {
-            "LU_offwind": 409.3105,
-            "LU_onwind": 628.1714,
-            "LU_solar": 262.6875,
+            "LU_offwind": 412.4064,
+            "LU_onwind": 629.5829,
+            "LU_solar": 274.8512,
             "LU_biomass CHP": 0.0,
             "LU_CCGT": 0.0,
             "LU_coal": 0.0,
             "LU_gas boiler steam": 0.0,
             "LU_industrial heat pump high temperature": 0.0,
             "LU_nuclear": 0.0,
-            "LU_OCGT": 541.1009
+            "LU_OCGT": 513.6444
         },
         "installed_capacity_GW": {
-            "LU_offwind": 142.4398,
-            "LU_onwind": 375.3433,
-            "LU_solar": 302.709,
+            "LU_offwind": 143.6132,
+            "LU_onwind": 355.9169,
+            "LU_solar": 316.6359,
             "LU_biomass CHP": 0.0,
             "LU_CCGT": 0.0,
             "LU_coal": 0.0,
             "LU_gas boiler steam": 0.0,
             "LU_industrial heat pump high temperature": 0.0,
             "LU_nuclear": 0.0,
-            "LU_OCGT": 618.2807
+            "LU_OCGT": 619.8501
         }
     }
 }
