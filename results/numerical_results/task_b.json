@@ -1,10 +1,10 @@
 {
     "objective_value": {
-        "2020": 817058743.9461,
-        "2021": 870562531.399,
-        "2022": 869939008.6739,
-        "2023": 824246057.4256,
-        "2024": 870173914.6584
+        "2020": 40836136740.9131,
+        "2021": 42381819023.5636,
+        "2022": 41524754023.9589,
+        "2023": 39688386358.9535,
+        "2024": 41867256173.9406
     },
     "transported_energy_TWh": {
         "2020": {},
@@ -15,132 +15,132 @@
     },
     "2020_BE": {
         "annual_dispatch_TWh": {
-            "coal": 83.8471,
-            "nuclear": 0.0,
-            "offwind": 149.8872,
-            "onwind": 0.0,
-            "solar": 80.7123,
+            "offwind": 124.3643,
+            "onwind": 16.4244,
+            "solar": 55.428,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 1.1742
+            "nuclear": 0.0,
+            "OCGT": 119.4041
         },
         "installed_capacity_GW": {
-            "coal": 36.7271,
-            "nuclear": 0.0,
-            "offwind": 77.8689,
-            "onwind": 0.0,
-            "solar": 87.447,
+            "offwind": 42.8793,
+            "onwind": 14.8811,
+            "solar": 55.3089,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 30.9189
+            "nuclear": 0.0,
+            "OCGT": 121.1571
         }
     },
     "2021_BE": {
         "annual_dispatch_TWh": {
-            "coal": 93.8532,
-            "nuclear": 0.0,
-            "offwind": 138.975,
+            "offwind": 121.2458,
             "onwind": 0.0,
-            "solar": 81.795,
+            "solar": 54.308,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 0.9977
+            "nuclear": 0.0,
+            "OCGT": 140.067
         },
         "installed_capacity_GW": {
-            "coal": 36.807,
-            "nuclear": 0.0,
-            "offwind": 81.306,
+            "offwind": 44.4195,
             "onwind": 0.0,
-            "solar": 99.1409,
+            "solar": 61.4937,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 26.0142
+            "nuclear": 0.0,
+            "OCGT": 117.4139
         }
     },
     "2022_BE": {
         "annual_dispatch_TWh": {
-            "coal": 95.2284,
-            "nuclear": 0.0,
-            "offwind": 125.9704,
-            "onwind": 0.0,
-            "solar": 93.1906,
+            "offwind": 98.6018,
+            "onwind": 9.3214,
+            "solar": 69.3666,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 1.2314
+            "nuclear": 0.0,
+            "OCGT": 138.331
         },
         "installed_capacity_GW": {
-            "coal": 37.1907,
-            "nuclear": 0.0,
-            "offwind": 77.4077,
-            "onwind": 0.0,
-            "solar": 93.1919,
+            "offwind": 36.6174,
+            "onwind": 8.8986,
+            "solar": 58.0168,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 30.3439
+            "nuclear": 0.0,
+            "OCGT": 121.8034
         }
     },
     "2023_BE": {
         "annual_dispatch_TWh": {
-            "coal": 86.9121,
-            "nuclear": 0.0,
-            "offwind": 147.3855,
-            "onwind": 0.0,
-            "solar": 80.1775,
+            "offwind": 95.0121,
+            "onwind": 39.5707,
+            "solar": 57.2736,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 1.1456
+            "nuclear": 0.0,
+            "OCGT": 123.7644
         },
         "installed_capacity_GW": {
-            "coal": 37.0468,
-            "nuclear": 0.0,
-            "offwind": 75.4217,
-            "onwind": 0.0,
-            "solar": 87.3678,
+            "offwind": 28.7539,
+            "onwind": 28.0271,
+            "solar": 52.9944,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 29.5962
+            "nuclear": 0.0,
+            "OCGT": 119.6833
         }
     },
     "2024_BE": {
         "annual_dispatch_TWh": {
-            "coal": 96.2049,
-            "nuclear": 0.0,
-            "offwind": 140.6844,
-            "onwind": 0.0,
-            "solar": 77.6451,
+            "offwind": 92.4073,
+            "onwind": 38.9616,
+            "solar": 49.4422,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 1.0864
+            "nuclear": 0.0,
+            "OCGT": 134.8097
         },
         "installed_capacity_GW": {
-            "coal": 37.2869,
-            "nuclear": 0.0,
-            "offwind": 75.6029,
-            "onwind": 0.0,
-            "solar": 96.805,
+            "offwind": 30.4855,
+            "onwind": 29.4481,
+            "solar": 54.0862,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 28.2154
+            "nuclear": 0.0,
+            "OCGT": 118.4299
         }
     }
 }

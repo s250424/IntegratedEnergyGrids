@@ -1,34 +1,34 @@
 {
     "objective_value": {
-        "2023": 824246057.4256
+        "2023": 39688386358.9535
     },
     "transported_energy_TWh": {
         "2023": {}
     },
     "2023_BE": {
         "annual_dispatch_TWh": {
-            "coal": 86.9121,
-            "nuclear": 0.0,
-            "offwind": 147.3855,
-            "onwind": 0.0,
-            "solar": 80.1775,
+            "offwind": 95.0121,
+            "onwind": 39.5707,
+            "solar": 57.2736,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 1.1456
+            "nuclear": 0.0,
+            "OCGT": 123.7644
         },
         "installed_capacity_GW": {
-            "coal": 37.0468,
-            "nuclear": 0.0,
-            "offwind": 75.4217,
-            "onwind": 0.0,
-            "solar": 87.3678,
+            "offwind": 28.7539,
+            "onwind": 28.0271,
+            "solar": 52.9944,
             "biomass CHP": 0.0,
             "CCGT": 0.0,
+            "coal": 0.0,
             "gas boiler steam": 0.0,
             "industrial heat pump high temperature": 0.0,
-            "OCGT": 29.5962
+            "nuclear": 0.0,
+            "OCGT": 119.6833
         }
     }
 }
