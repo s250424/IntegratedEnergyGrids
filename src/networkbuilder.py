@@ -194,13 +194,14 @@ class NetworkBuilder:
                 lifetime = self.tech_data.loc[(tech, "lifetime"), "value"]
                 #capital_cost = self.tech_data.loc[(tech, "investment"), "value"]+ self.tech_data.loc[(tech, "investment"), "value"]*(self.tech_data.loc[(tech, "FOM"), "value"]/100)
                 invest = self.tech_data.loc[(tech, "investment"), "value"]*1000
+                fom = invest*(self.tech_data.loc[(tech, "FOM"), "value"]/100)
                 efficiency = self.tech_data.loc[(tech, "efficiency"), "value"]
                 discount_rate = 0.07
 
                 # Add generators to network
                 if tech == "biomass CHP":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost/efficiency, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate, fom_cost=fom,
                         bus0=f"bus_{country}_biomass", 
                         bus1=f"bus_{country}",
                         bus2=f"bus_{country}_heat",
@@ -208,7 +209,7 @@ class NetworkBuilder:
                         efficiency2=self.tech_data.loc[(tech, "efficiency-heat"), "value"])
                 elif tech == "CCGT":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, discount_rate=discount_rate,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost/0.51, lifetime=lifetime, overnight_cost=invest, discount_rate=discount_rate, fom_cost=fom,
                         bus0=f"bus_{country}_ch4", 
                         bus1=f"bus_{country}",
                         bus2=f"bus_{country}_heat",
@@ -217,30 +218,30 @@ class NetworkBuilder:
                         efficiency2=0.39)                
                 elif tech == "gas boiler steam":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost/efficiency, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate, fom_cost=fom,
                         bus0=f"bus_{country}_ch4", 
                         bus1=f"bus_{country}_heat",
                         carrier = 'ch4')
                 elif tech == "industrial heat pump high temperature":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost/efficiency, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate, fom_cost=fom,
                         bus0=f"bus_{country}", 
                         bus1=f"bus_{country}_heat")
                 elif tech == "OCGT":
                     self.network.add(
-                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
+                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost/efficiency, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate, fom_cost=fom,
                         bus0=f"bus_{country}_ch4",
                         bus1=f"bus_{country}",
                         carrier = 'ch4')
                 elif tech == "coal":
                     self.network.add(
-                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
+                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost/efficiency, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate, fom_cost=fom,
                         bus0=f"bus_{country}_coal",
                         bus1=f"bus_{country}",
                         carrier = 'coal')
                 elif tech == "nuclear":
                     self.network.add(
-                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
+                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost/efficiency, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate, fom_cost=fom,
                         bus0=f"bus_{country}_nuclear",
                         bus1=f"bus_{country}",
                         carrier = 'nuclear')
@@ -282,8 +283,10 @@ class NetworkBuilder:
                     p_max_pu=cf[tech],
                     marginal_cost=0,
                     #capital_cost=self.tech_data.loc[(tech, "investment"), "value"] + self.tech_data.loc[(tech, "investment"), "value"] * (self.tech_data.loc[(tech, "FOM"), "value"]/100),
-                    overnight_cost=self.tech_data.loc[(tech, "investment"), "value"]*1000
+                    overnight_cost=self.tech_data.loc[(tech, "investment"), "value"]*1000,
+                    fom_cost= self.tech_data.loc[(tech, "investment"), "value"]*1000*(self.tech_data.loc[(tech, "FOM"), "value"]/100),
                     discount_rate=discount_rate,
+                    lifetime=self.tech_data.loc[(tech, "lifetime"), "value"],
                     carrier=tech
                 )
 
@@ -312,10 +315,14 @@ class NetworkBuilder:
                     p_nom_extendable=True,
                     marginal_cost=0.001,
                     marginal_cost_storage=0,
-                    capital_cost=self.tech_data.loc[(tech, "investment"), "value"] / 1000 + self.tech_data.loc[(tech, "investment"), "value"]/1000 *(self.tech_data.loc[(tech, "FOM"), "value"]/100),
+                    #capital_cost=self.tech_data.loc[(tech, "investment"), "value"] / 1000 + self.tech_data.loc[(tech, "investment"), "value"]/1000 *(self.tech_data.loc[(tech, "FOM"), "value"]/100),
+                    overnight_cost=self.tech_data.loc[(tech, "investment"), "value"],
+                    fom_cost=self.tech_data.loc[(tech, "investment"), "value"]*(self.tech_data.loc[(tech, "FOM"), "value"]/100),
                     efficiency_store=self.tech_data.loc[(tech, "efficiency"), "value"],
                     efficiency_dispatch=self.tech_data.loc[(tech, "efficiency"), "value"],
                     standing_loss=0,
+                    discount_rate=0.07,
+                    lifetime=self.tech_data.loc[(tech, "lifetime"), "value"],
                     carrier=tech
                 )
 
