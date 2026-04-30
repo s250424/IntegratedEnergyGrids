@@ -96,17 +96,17 @@ class NetworkBuilder:
             self.network.add("Bus", name=f"bus_{country}_nuclear", carrier="nuclear")
  
             # add stocks
-            self.network.add("Store", f"biomass_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_biomass")
-            self.network.add("Store", f"coal_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_coal")
-            self.network.add("Store", f"nuclear_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_nuclear")
+            self.network.add("Store", f"biomass_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_biomass", marginal_cost=self.tech_data.loc[("solid biomass", "fuel"), "value"])
+            self.network.add("Store", f"coal_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_coal", marginal_cost=self.tech_data.loc[("coal", "fuel"), "value"])
+            self.network.add("Store", f"nuclear_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_nuclear", marginal_cost=self.tech_data.loc[("nuclear", "fuel"), "value"])
  
             if self.config.get("CH4_lines"):
                 if country == "NL":
-                    self.network.add("Store", f"ch4_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4")
+                    self.network.add("Store", f"ch4_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4", marginal_cost=self.tech_data.loc[("gas", "fuel"), "value"])
                 else:
-                    self.network.add("Store", f"ch4_stock_{country}", e_initial=0, e_nom=1e20, bus=f"bus_{country}_ch4")
+                    self.network.add("Store", f"ch4_stock_{country}", e_initial=0, e_nom=1e20, bus=f"bus_{country}_ch4", marginal_cost=self.tech_data.loc[("gas", "fuel"), "value"])
             else:
-                self.network.add("Store", f"ch4_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4")
+                self.network.add("Store", f"ch4_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4", marginal_cost=self.tech_data.loc[("gas", "fuel"), "value"])
  
         # dispatchable with stock & busses
         self.network.add("Carrier", "ch4", co2_emissions=self.tech_data.loc[("gas", "CO2 intensity"), "value"]) # t CO2/MWh
