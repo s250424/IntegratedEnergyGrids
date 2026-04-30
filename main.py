@@ -33,11 +33,11 @@ CONFIG_D = copy.deepcopy(CONFIG_A)
 CONFIG_D["countries"] = ["BE", "FR", "NL", "DE_LU"]    # must be the same naming convention as used by ENTSO-E
 
 CONFIG_D ["transmission_lines"] = [
-    {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 1850},
-    {"name": "BE-NL",    "bus0": "BE",    "bus1": "NL",    "x": 0.1, "s_nom": 950},
-    {"name": "BE-DE_LU", "bus0": "BE",    "bus1": "DE_LU", "x": 0.1, "s_nom": 400},
-    {"name": "FR-DE_LU", "bus0": "FR",    "bus1": "DE_LU", "x": 0.1, "s_nom": 3000},
-    {"name": "NL-DE_LU", "bus0": "NL",    "bus1": "DE_LU", "x": 0.1, "s_nom": 3500},
+    {"name": "BE-FR",    "bus0": "BE",    "bus1": "FR",    "x": 0.1, "s_nom": 6000},
+    {"name": "BE-NL",    "bus0": "BE",    "bus1": "NL",    "x": 0.1, "s_nom": 6070},
+    {"name": "BE-DE_LU", "bus0": "BE",    "bus1": "DE_LU", "x": 0.1, "s_nom": 1000},
+    {"name": "FR-DE_LU", "bus0": "FR",    "bus1": "DE_LU", "x": 0.1, "s_nom": 9000},
+    {"name": "NL-DE_LU", "bus0": "NL",    "bus1": "DE_LU", "x": 0.1, "s_nom": 5500},
 ]
 
 CONFIG_F = copy.deepcopy(CONFIG_C)
