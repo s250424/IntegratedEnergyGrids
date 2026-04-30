@@ -212,8 +212,8 @@ print(f"CO2 shadow price for task H: {co2_shadow_price:.2f} €/tCO2")
 export_results_to_json(network_h.network, "task_h", CONFIG_H["years"][0])
 
 # # TASK i
-# input_data_i = InputHandler(CONFIG_I)
-# network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
+input_data_i = InputHandler(CONFIG_I)
+network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
 
 visualizer_i = Visualizer(network_i.network, scenario_name="i")
 # visualizer_i.plot_installed_capacity()
@@ -223,11 +223,8 @@ visualizer_i = Visualizer(network_i.network, scenario_name="i")
 visualizer_i.plot_annual_final_energy_mix()
 visualizer_i.plot_energy_demand_split()
 
-# export_results_to_json(network_i.network, "task_i", CONFIG_I["years"][0])
+export_results_to_json(network_i.network, "task_i", CONFIG_I["years"][0])
 
-# # TASK J
-# input_data_j = InputHandler(CONFIG_J)
-# network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0])
 # # TASK J
 # input_data_j = InputHandler(CONFIG_J)
 # network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0])
