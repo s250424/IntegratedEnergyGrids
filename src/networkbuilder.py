@@ -71,17 +71,17 @@ class NetworkBuilder:
     def _add_buses_carrier_stocks(self):
         """
     Add buses, energy stocks, and carriers to the network for each country.
-
+ 
     For each configured country, adds four buses (electricity, CH4, heat, biomass)
     and corresponding storage stocks:
-
+ 
     - Biomass stock: always unlimited (e_initial=1e20).
     - CH4 stock: if CH4 transmission lines are enabled, only the Netherlands ('NL')
       gets an unlimited initial stock (acting as the gas import hub); all other
       countries start empty. Without CH4 lines, all countries get unlimited stock.
-
+ 
     Registers the following carriers with CO2 intensities (t CO2/MWh):
-
+ 
     - ch4, biomass, coal: intensities sourced from technology data.
     - electricity, heat: no CO2 intensity.
     - nuclear, solar, offwind, onwind: fixed lifecycle emission factors.
@@ -92,9 +92,15 @@ class NetworkBuilder:
             self.network.add("Bus", name=f"bus_{country}_ch4", carrier="ch4")
             self.network.add("Bus", name=f"bus_{country}_heat", carrier="heat")
             self.network.add("Bus", name=f"bus_{country}_biomass", carrier="biomass")
-
+            self.network.add("Bus", name=f"bus_{country}_coal", carrier="coal")
+            self.network.add("Bus", name=f"bus_{country}_nuclear", carrier="nuclear")
+ 
+ 
             # add stocks
             self.network.add("Store", f"biomass_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_biomass")
+            self.network.add("Store", f"coal_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_coal")
+            self.network.add("Store", f"nuclear_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_nuclear")
+ 
             if self.config.get("CH4_lines"):
                 if country == "NL":
                     self.network.add("Store", f"ch4_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4")
@@ -102,24 +108,23 @@ class NetworkBuilder:
                     self.network.add("Store", f"ch4_stock_{country}", e_initial=0, e_nom=1e20, bus=f"bus_{country}_ch4")
             else:
                 self.network.add("Store", f"ch4_stock_{country}", e_initial=1e20, e_nom=1e20, bus=f"bus_{country}_ch4")
-
+ 
         # dispatchable with stock & busses
         self.network.add("Carrier", "ch4", co2_emissions=self.tech_data.loc[("gas", "CO2 intensity"), "value"]) # t CO2/MWh
         self.network.add("Carrier", "biomass", co2_emissions=self.tech_data.loc[("solid biomass", "CO2 intensity"), "value"])   # t CO2/MWh
         self.network.add("Carrier", "electricity")
         self.network.add("Carrier", "heat")
-
-        # dispatchable without stock & busses
         self.network.add("Carrier", "coal", co2_emissions=self.tech_data.loc[("coal", "CO2 intensity"), "value"])   # t CO2/MWh
-        self.network.add("Carrier", "nuclear", co2_emissions=0.012) # t CO2/MWh, from Claude
-
+        self.network.add("Carrier", "nuclear") # t CO2/MWh, from Claude
+ 
         # volatile
-        self.network.add("Carrier", "solar", co2_emissions=0)   # t CO2/MWh, from Claude
-        self.network.add("Carrier", "offwind", co2_emissions=0) # t CO2/MWh, from Claude
-        self.network.add("Carrier", "onwind", co2_emissions=0)  #   , from Claude
-
+        self.network.add("Carrier", "solar")   # t CO2/MWh, from Claude
+        self.network.add("Carrier", "offwind") # t CO2/MWh, from Claude
+        self.network.add("Carrier", "onwind")  #   , from Claude
+ 
         # storage
         self.network.add("Carrier", "Pumped-Storage-Hydro-bicharger")
+ 
 
 
 
@@ -188,13 +193,15 @@ class NetworkBuilder:
                 name = f"generator_disp_{country}_{tech}"
                 marginal_cost = self.tech_data.loc[(tech, "VOM"), "value"] if (tech, "VOM") in self.tech_data.index else 0
                 lifetime = self.tech_data.loc[(tech, "lifetime"), "value"]
-                capital_cost = self.tech_data.loc[(tech, "investment"), "value"]+ self.tech_data.loc[(tech, "investment"), "value"]*(self.tech_data.loc[(tech, "FOM"), "value"]/100)
+                #capital_cost = self.tech_data.loc[(tech, "investment"), "value"]+ self.tech_data.loc[(tech, "investment"), "value"]*(self.tech_data.loc[(tech, "FOM"), "value"]/100)
+                invest = self.tech_data.loc[(tech, "investment"), "value"]*1000
                 efficiency = self.tech_data.loc[(tech, "efficiency"), "value"]
+                discount_rate = 0.07
 
                 # Add generators to network
                 if tech == "biomass CHP":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
                         bus0=f"bus_{country}_biomass", 
                         bus1=f"bus_{country}",
                         bus2=f"bus_{country}_heat",
@@ -202,32 +209,33 @@ class NetworkBuilder:
                         efficiency2=self.tech_data.loc[(tech, "efficiency-heat"), "value"])
                 elif tech == "CCGT":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=0.51,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, discount_rate=discount_rate,
                         bus0=f"bus_{country}_ch4", 
                         bus1=f"bus_{country}",
                         bus2=f"bus_{country}_heat",
                         carrier = 'ch4',
+                        efficiency=0.51,
                         efficiency2=0.39)                
                 elif tech == "gas boiler steam":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
                         bus0=f"bus_{country}_ch4", 
                         bus1=f"bus_{country}_heat",
                         carrier = 'ch4')
                 elif tech == "industrial heat pump high temperature":
                     self.network.add(
-                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
+                        "Link", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
                         bus0=f"bus_{country}", 
                         bus1=f"bus_{country}_heat")
                 elif tech == "OCGT":
                     self.network.add(
-                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
+                        "Link",  name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
                         bus0=f"bus_{country}_ch4",
                         bus1=f"bus_{country}",
                         carrier = 'ch4')
                 else:
                     self.network.add(
-                        "Generator", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, capital_cost=capital_cost, efficiency=efficiency,
+                        "Generator", name=name, p_nom_extendable=True, marginal_cost=marginal_cost, lifetime=lifetime, overnight_cost=invest, efficiency=efficiency, discount_rate=discount_rate,
                         bus=f"bus_{country}",
                         carrier=tech)
                     
@@ -254,6 +262,7 @@ class NetworkBuilder:
         for country in self.config["countries"]:
             for tech in self.config["technologies_vol"]:
                 cf = self.cf[(country, year)]
+                discount_rate = 0.07
                 if self.config.get("load_year") is not None: # for task b (as we're only using year 2023)
                     cf = cf.iloc[:len(self.network.snapshots)].copy()
                     cf.index = self.network.snapshots
@@ -265,8 +274,10 @@ class NetworkBuilder:
                     name=f"generator_vol_{country}_{tech}",
                     p_nom_extendable=True,
                     p_max_pu=cf[tech],
-                    marginal_cost=self.tech_data.loc[(tech, "VOM"), "value"] if (tech, "VOM") in self.tech_data.index else 0,
-                    capital_cost=self.tech_data.loc[(tech, "investment"), "value"] + self.tech_data.loc[(tech, "investment"), "value"] * (self.tech_data.loc[(tech, "FOM"), "value"]/100),
+                    marginal_cost=0,
+                    #capital_cost=self.tech_data.loc[(tech, "investment"), "value"] + self.tech_data.loc[(tech, "investment"), "value"] * (self.tech_data.loc[(tech, "FOM"), "value"]/100),
+                    overnight_cost=self.tech_data.loc[(tech, "investment"), "value"]*1000
+                    discount_rate=discount_rate,
                     carrier=tech
                 )
 
