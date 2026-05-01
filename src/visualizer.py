@@ -1385,7 +1385,7 @@ class Visualizer:
         )
 
         ax.set_ylabel("Transported energy [TWh]")
-        ax.set_title("Energy transport comparison")
+        # ax.set_title("Energy transport comparison")
         ax.spines[["top", "right"]].set_visible(False)
         ax.grid(axis="y", linestyle="--", alpha=0.4)
 
@@ -1530,7 +1530,7 @@ class Visualizer:
         ax.set_yticks([i * bar_spacing for i in range(len(countries))])
         ax.set_yticklabels(countries)
         ax.set_xlabel("Share of final energy supply (%)")
-        ax.set_title("Annual final energy supply mix: electricity + heat")
+        # ax.set_title("Annual final energy supply mix: electricity + heat")
         ax.spines[["top", "right", "left"]].set_visible(False)
 
         ax.legend(
@@ -1582,7 +1582,7 @@ class Visualizer:
         ax.set_xticks(x)
         ax.set_xticklabels(countries)
         ax.set_ylabel("Annual demand [TWh]")
-        ax.set_title("Annual final energy demand split")
+        # ax.set_title("Annual final energy demand split")
         ax.spines[["top", "right"]].set_visible(False)
         ax.grid(axis="y", linestyle="--", alpha=0.4)
         ax.legend()

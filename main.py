@@ -201,16 +201,16 @@ CONFIG_J["no_gas_supply"] = True # removes CH4 availability; gas-based technolog
 
 # export_results_to_json(network_g.network, "task_g", CONFIG_G["years"][0])
 
-# TASK H
-input_data_h = InputHandler(CONFIG_H)
-network_h = NetworkBuilder(CONFIG_H, input_data_h, CONFIG_H["years"][0])
+# # TASK H
+# input_data_h = InputHandler(CONFIG_H)
+# network_h = NetworkBuilder(CONFIG_H, input_data_h, CONFIG_H["years"][0])
 
-# CO2 shadow price
-co2_shadow_price = abs(network_h.network.model.constraints["CO2Limit"].dual.item())
-print(f"CO2 shadow price for task H: {co2_shadow_price:.2f} €/tCO2")
+# # CO2 shadow price
+# co2_shadow_price = abs(network_h.network.model.constraints["CO2Limit"].dual.item())
+# print(f"CO2 shadow price for task H: {co2_shadow_price:.2f} €/tCO2")
 
-export_results_to_json(network_h.network, "task_h", CONFIG_H["years"][0], 
-                       co2_shadow_price=co2_shadow_price)
+# export_results_to_json(network_h.network, "task_h", CONFIG_H["years"][0], 
+#                        co2_shadow_price=co2_shadow_price)
 
 # TASK i
 input_data_i = InputHandler(CONFIG_I)
