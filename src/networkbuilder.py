@@ -54,10 +54,10 @@ class NetworkBuilder:
         year (int): The simulation year, passed to volatile generator and
             load methods to select the appropriate time series data.
         """
-        # INITIALIZE PYPSA NETWORK
+        # initialize pypsa network
         self.network = pypsa.Network()
         
-        # ADD COMPONENTS TO PYPSA NETWORK
+        # add components to pypsa network
         self._add_buses_carrier_stocks()
         load_year = self.config.get("load_year", year)
         self._add_loads(load_year)
@@ -126,8 +126,6 @@ class NetworkBuilder:
  
         # storage
         self.network.add("Carrier", "Pumped-Storage-Hydro-bicharger")
- 
-
 
 
     def _add_loads(self, year:int=2023):
@@ -195,7 +193,6 @@ class NetworkBuilder:
                 name = f"generator_disp_{country}_{tech}"
                 marginal_cost = self.tech_data.loc[(tech, "VOM"), "value"] if (tech, "VOM") in self.tech_data.index else 0
                 lifetime = self.tech_data.loc[(tech, "lifetime"), "value"]
-                #capital_cost = self.tech_data.loc[(tech, "investment"), "value"]+ self.tech_data.loc[(tech, "investment"), "value"]*(self.tech_data.loc[(tech, "FOM"), "value"]/100)
                 invest = self.tech_data.loc[(tech, "investment"), "value"]*1000
                 fom = invest*(self.tech_data.loc[(tech, "FOM"), "value"]/100)
                 efficiency = self.tech_data.loc[(tech, "efficiency"), "value"]
@@ -248,7 +245,8 @@ class NetworkBuilder:
                         bus0=f"bus_{country}_nuclear",
                         bus1=f"bus_{country}",
                         carrier = 'nuclear')
-                    
+
+
     def _add_volatile_generators(self, year:int):
         """
     Add volatile (weather-dependent) generators to the network for a given year.
@@ -285,7 +283,6 @@ class NetworkBuilder:
                     p_nom_extendable=True,
                     p_max_pu=cf[tech],
                     marginal_cost=0,
-                    #capital_cost=self.tech_data.loc[(tech, "investment"), "value"] + self.tech_data.loc[(tech, "investment"), "value"] * (self.tech_data.loc[(tech, "FOM"), "value"]/100),
                     overnight_cost=self.tech_data.loc[(tech, "investment"), "value"]*1000,
                     fom_cost= self.tech_data.loc[(tech, "investment"), "value"]*1000*(self.tech_data.loc[(tech, "FOM"), "value"]/100),
                     discount_rate=discount_rate,
@@ -318,7 +315,6 @@ class NetworkBuilder:
                     p_nom_extendable=True,
                     marginal_cost=0.001,
                     marginal_cost_storage=0,
-                    #capital_cost=self.tech_data.loc[(tech, "investment"), "value"] / 1000 + self.tech_data.loc[(tech, "investment"), "value"]/1000 *(self.tech_data.loc[(tech, "FOM"), "value"]/100),
                     overnight_cost=self.tech_data.loc[(tech, "investment"), "value"],
                     fom_cost=self.tech_data.loc[(tech, "investment"), "value"]*(self.tech_data.loc[(tech, "FOM"), "value"]/100),
                     efficiency_store=self.tech_data.loc[(tech, "efficiency"), "value"],
@@ -361,21 +357,6 @@ class NetworkBuilder:
                     p_nom_extendable=True,
                 )
 
-    # def _add_global_co2_limit(self):
-    #     """
-    # Add a global CO2 emissions constraint to the network.
-
-    # Registers a GlobalConstraint named 'CO2Limit' that caps total CO2 emissions
-    # across all carriers with a 'co2_emissions' attribute, using the limit defined
-    # in the configuration.
-    #     """
-    #     self.network.add(
-    #         "GlobalConstraint",
-    #         "CO2Limit",
-    #         carrier_attribute="co2_emissions",
-    #         sense="<=",
-    #         constant=self.config["global_CO2_limit"])
-        
     def _add_custom_co2_constraint(self, n, snapshots):
         m = n.model
 

@@ -553,7 +553,7 @@ class Visualizer:
         plt.close()
 
     
-    def plot_sensitivity_capacity_to_weather_years(self, name="sensitivity_capacity_to_weather_years") -> None:
+    def plot_sensitivity_capacity_to_weather_years(self, capacity_dict, name="sensitivity_capacity_to_weather_years") -> None:
         """
         Plot and save a box plot of optimal capacity per technology across weather years.
 
@@ -565,7 +565,7 @@ class Visualizer:
         """
         labels = []
         data = []
-        for key, vals in self.capacity_dict.items():
+        for key, vals in capacity_dict.items():
             if all(v == 0 for v in vals):
                 continue
             labels.append(self._get_label(key))
