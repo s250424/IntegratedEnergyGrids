@@ -1110,7 +1110,7 @@ class Visualizer:
 
         # fall back to circle layout for any country not in the map
         buses = [b.replace("bus_", "") for b in self.network.buses.index
-                if "heat" not in b and "ch4" not in b and "biomass" not in b]
+                if not any(carrier in b for carrier in ["heat", "ch4", "biomass", "coal", "nuclear"])]
         for i, bus in enumerate(buses):
             if bus not in COUNTRY_POS:
                 angle = 2 * np.pi * i / len(buses)
@@ -1407,93 +1407,100 @@ class Visualizer:
     
     def plot_annual_final_energy_mix(self, name="annual_final_energy_mix") -> None:
         country_totals = {}
+        known_countries = [b.replace("bus_", "") for b in self.network.buses.index
+                        if "heat" not in b and "ch4" not in b and "biomass" not in b]
 
-        # 1) Electricity supply: generators
+        def extract_country(parts, type_idx):
+            remainder = parts[type_idx + 1:]
+            country = ""
+            for i in range(1, len(remainder)):
+                candidate = "_".join(remainder[:i])
+                if candidate in known_countries:
+                    country = candidate
+                    break
+            return country if country else "unknown"
+
+        # 1) electricity supply: generators
         for gen in self.network.generators.index:
             total = self.network.generators_t.p[gen].sum()
             if total <= 0:
                 continue
-
             parts = gen.split("_")
             try:
                 type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
-                country = parts[type_idx + 1]
+                country = extract_country(parts, type_idx)
             except StopIteration:
                 country = "unknown"
-
             label = self._get_label(gen) + " (el.)"
             country_totals.setdefault(country, {})
             country_totals[country][label] = country_totals[country].get(label, 0) + total
 
-        # 2) Electricity supply: links into electricity bus
+        # 2) electricity supply: links into electricity bus
         for link in self.network.links.index:
             bus1 = self.network.links.loc[link, "bus1"]
             bus1_name = bus1.replace("bus_", "")
-
             if "_" not in bus1_name and link in self.network.links_t.p1.columns:
                 total = (-self.network.links_t.p1[link]).clip(lower=0).sum()
                 if total <= 0:
                     continue
-
                 parts = link.split("_")
                 try:
                     type_idx = next(i for i, p in enumerate(parts) if p in ("disp", "vol", "storage"))
-                    country = parts[type_idx + 1]
+                    country = extract_country(parts, type_idx)
                 except StopIteration:
                     country = "unknown"
-
                 label = self._get_label(link) + " (el.)"
                 country_totals.setdefault(country, {})
                 country_totals[country][label] = country_totals[country].get(label, 0) + total
 
-        # 3) Heat supply: links into heat bus
+        # 3) heat supply: links into heat bus
         for link in self.network.links.index:
             bus1 = self.network.links.loc[link, "bus1"]
-
             if bus1.endswith("_heat") and link in self.network.links_t.p1.columns:
                 total = (-self.network.links_t.p1[link]).clip(lower=0).sum()
                 if total <= 0:
                     continue
-
+                # heat bus name is always bus_{country}_heat so stripping both ends is safe
                 country = bus1.replace("bus_", "").replace("_heat", "")
                 label = self._get_label(link) + " (heat)"
-
                 country_totals.setdefault(country, {})
                 country_totals[country][label] = country_totals[country].get(label, 0) + total
 
         countries = list(country_totals.keys())
 
-        fig_height = max(3, len(countries) * 1.8 + 1.5)
-        fig, ax = plt.subplots(figsize=(12, fig_height))
-
-        legend_handles = {}
-        bar_height = 0.5
-        bar_spacing = 1.0
-
         all_labels = sorted({label for techs in country_totals.values() for label in techs})
         label_to_color = {
             label: self.TECH_COLORS.get(
                 label.replace(" (el.)", "").replace(" (heat)", ""),
-                cm.tab20(i / max(len(all_labels), 1))
+                cm.tab10(i / max(len(all_labels), 1))
             )
             for i, label in enumerate(all_labels)
         }
 
+        BAR_HEIGHT       = 0.5
+        BAR_SPACING      = 1.0
+        INLINE_THRESHOLD = 8
+        stagger_offsets  = [0.0, 0.18]
+
+        fig_height = max(3, len(countries) * 1.8 + 1.5)
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+
+        legend_handles = {}
+        all_outside    = []
+
         for c_idx, country in enumerate(countries):
-            bar_y = c_idx * bar_spacing
+            bar_y  = c_idx * BAR_SPACING
             totals = dict(sorted(country_totals[country].items(), key=lambda x: x[1], reverse=True))
             total_supply = sum(totals.values())
 
             left = 0.0
             for label, value in totals.items():
-                pct = value / total_supply * 100
+                pct   = value / total_supply * 100
                 color = label_to_color[label]
 
                 bar = ax.barh(
-                    bar_y,
-                    pct,
-                    left=left,
-                    height=bar_height,
+                    bar_y, pct, left=left,
+                    height=BAR_HEIGHT,
                     color=color,
                     edgecolor="white",
                     linewidth=1.2,
@@ -1502,35 +1509,47 @@ class Visualizer:
                 if label not in legend_handles:
                     legend_handles[label] = bar[0]
 
-                if pct >= 8:
+                mid_x = left + pct / 2
+
+                if pct >= INLINE_THRESHOLD:
                     ax.text(
-                        left + pct / 2,
-                        bar_y,
+                        mid_x, bar_y,
                         f"{label}\n{value/1e6:.2f} TWh",
-                        ha="center",
-                        va="center",
-                        fontsize=7,
-                        color="white",
-                        fontweight="bold",
+                        ha="center", va="center",
+                        fontsize=7, color="white", fontweight="bold",
                     )
+                else:
+                    all_outside.append((mid_x, label, value, bar_y))
 
                 left += pct
 
             ax.text(
-                101,
-                bar_y,
+                101, bar_y,
                 f"Total: {total_supply/1e6:.2f} TWh",
-                va="center",
-                ha="left",
-                fontsize=8.5,
-                fontstyle="italic",
+                va="center", ha="left",
+                fontsize=8.5, fontstyle="italic",
             )
 
+        from itertools import groupby
+        all_outside_sorted = sorted(all_outside, key=lambda x: x[3])
+        for bar_y, group in groupby(all_outside_sorted, key=lambda x: x[3]):
+            for idx, (mid_x, label, value, _) in enumerate(group):
+                y_offset = stagger_offsets[idx % len(stagger_offsets)]
+                label_y  = bar_y + BAR_HEIGHT / 2 + 0.18 + y_offset
+                ax.annotate(
+                    f"{label}: {value/1e6:.2f} TWh",
+                    xy        =(mid_x, bar_y + BAR_HEIGHT / 2),
+                    xytext    =(mid_x, label_y),
+                    ha        ="center", va="bottom",
+                    fontsize  =7.5,
+                    arrowprops=dict(arrowstyle="-", color="black", lw=0.8),
+                )
+
         ax.set_xlim(0, 100)
-        ax.set_yticks([i * bar_spacing for i in range(len(countries))])
-        ax.set_yticklabels(countries)
+        ax.set_ylim(-BAR_HEIGHT, (len(countries) - 1) * BAR_SPACING + BAR_HEIGHT + 0.8)
+        ax.set_yticks([i * BAR_SPACING for i in range(len(countries))])
+        ax.set_yticklabels(countries, fontsize=11)
         ax.set_xlabel("Share of final energy supply (%)")
-        # ax.set_title("Annual final energy supply mix: electricity + heat")
         ax.spines[["top", "right", "left"]].set_visible(False)
 
         ax.legend(
@@ -1538,9 +1557,9 @@ class Visualizer:
             labels=list(legend_handles.keys()),
             loc="upper center",
             bbox_to_anchor=(0.5, -0.15),
-            ncol=3,
+            ncol=min(len(legend_handles), 4),
             frameon=False,
-            fontsize=8,
+            fontsize=9,
         )
 
         fig.tight_layout()

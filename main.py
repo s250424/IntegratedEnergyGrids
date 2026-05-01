@@ -126,14 +126,14 @@ CONFIG_J["no_gas_supply"] = True # removes CH4 availability; gas-based technolog
 
 # export_results_to_json(network_c.network, "task_c", CONFIG_C["years"][0])
 
-# # TASK D
-# input_data_d = InputHandler(CONFIG_D)
-# network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
-# visualizer_d = Visualizer(network_d.network, scenario_name = 'd')
+# TASK D
+input_data_d = InputHandler(CONFIG_D)
+network_d = NetworkBuilder(CONFIG_D, input_data_d, CONFIG_D["years"][0])
+visualizer_d = Visualizer(network_d.network, scenario_name = 'd')
 # visualizer_d.plot_annual_electricity_mix()
 # visualizer_d.plot_installed_capacity()
 # visualizer_d.plot_line_utilisation_bar()
-# visualizer_d.plot_network_diagram()
+visualizer_d.plot_network_diagram()
 
 # export_results_to_json(network_d.network, "task_d", CONFIG_D["years"][0])
 
@@ -217,9 +217,9 @@ input_data_i = InputHandler(CONFIG_I)
 network_i = NetworkBuilder(CONFIG_I, input_data_i, CONFIG_I["years"][0])
 
 visualizer_i = Visualizer(network_i.network, scenario_name="i")
-# visualizer_i.plot_installed_capacity()
+visualizer_i.plot_installed_capacity()
 # visualizer_i.plot_annual_electricity_mix()
-# visualizer_i.plot_energy_transport_comparison()
+visualizer_i.plot_energy_transport_comparison()
 visualizer_i = Visualizer(network_i.network, scenario_name="i")
 visualizer_i.plot_annual_final_energy_mix()
 visualizer_i.plot_energy_demand_split()
@@ -231,12 +231,12 @@ input_data_j = InputHandler(CONFIG_J)
 network_j = NetworkBuilder(CONFIG_J, input_data_j, CONFIG_J["years"][0])
 
 visualizer_j = Visualizer(network_j.network, scenario_name="j")
-# visualizer_j.plot_installed_capacity()
+visualizer_j.plot_installed_capacity()
 # visualizer_j.plot_annual_electricity_mix()
-# visualizer_j.plot_energy_transport_comparison()
+visualizer_j.plot_energy_transport_comparison()
 visualizer_j = Visualizer(network_j.network, scenario_name="j")
 visualizer_j.plot_annual_final_energy_mix()
-visualizer_j.plot_energy_demand_split()
+# visualizer_j.plot_energy_demand_split()
 
 print("\n--- CH4 STORES ---")
 for store in network_j.network.stores.index:
